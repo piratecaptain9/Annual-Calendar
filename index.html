@@ -36,7 +36,7 @@ label{display:block;font-size:13px;color:var(--mut);margin:8px 0 2px}
 </style></head><body><div class="wrap" id="app"></div>
 <script type="module">
 // ===== 資料層：填入 Firebase 設定即使用 Firestore，否則為 localStorage 示範模式 =====
-const CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""}; // ← 貼上 Firebase 網頁應用程式設定
+const CONFIG={apiKey:"AIzaSyB0a91-QE4yE7DAyMHhZpn2fRPXJrYPctw",authDomain:"annual-calendar-c4a37.firebaseapp.com",projectId:"annual-calendar-c4a37",appId:"1:241829509669:web:9b6496836bc486abfd5dcc"}; // ← 貼上 Firebase 網頁應用程式設定
 const connected=!!CONFIG.projectId;let F=null;
 const KEY="acms_v1";let db=null;
 function load(){try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
