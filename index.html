@@ -50,7 +50,7 @@ const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>(
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
 const yc=()=>db.courses.filter(c=>c.year==year).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
-const fmt=c=>`${c.date} ${c.start||""}${c.end?"–"+c.end:""}`;
+const fmt=c=>`${c.date}${c.endDate&&c.endDate!=c.date?"～"+c.endDate:""} ${c.start||""}${c.end?"–"+c.end:""}`;
 const nk=n=>String(n).trim().toLowerCase(),sid=cid=>cid+"__"+encodeURIComponent(nk(me.name));
 function refresh(){const m=document.querySelector("[data-det]"),i=m&&m.dataset.det;render();if(i&&db.courses.some(c=>c.id==i))detail(i)}
 const run=async f=>{try{await f()}catch(e){alert(e.message||e)}refresh()};
@@ -88,6 +88,16 @@ const api={
  async setStatus(c,st){if(!F){c.status=st;return save()}await F.S.updateDoc(F.S.doc(F.fs,"courses",c.id),{status:st})},
  async del(id){if(!F){db.courses=db.courses.filter(x=>x.id!=id);db.signups=db.signups.filter(s=>s.courseId!=id);return save()}
   const{fs,S}=F,b=S.writeBatch(fs);db.signups.filter(s=>s.courseId==id).forEach(s=>b.delete(S.doc(fs,"signups",s.id)));b.delete(S.doc(fs,"courses",id));await b.commit()}};
+function importUi(){modal(`<h2>匯入課程（JSON）</h2><p class="mut">選擇檔案或直接貼上內容。年度、名稱、日期都相同的課程會略過，不會重複建立。</p><input type="file" id="imf" accept=".json,application/json"><textarea id="imt" style="width:100%;height:160px;margin-top:8px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px"></textarea><div class="row" style="margin-top:8px"><button class="p" data-a="doimport">匯入</button><button data-a="close">取消</button></div>`);
+ $("#imf").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>$("#imt").value=t)}}
+async function doImport(){let a;try{a=JSON.parse($("#imt").value)}catch(e){throw Error("內容不是有效的 JSON")}
+ if(!Array.isArray(a)||!a.length)throw Error("沒有可匯入的課程");
+ const key=c=>c.year+"|"+c.title+"|"+c.date,have=new Set(db.courses.map(key)),
+ list=a.filter(c=>c&&c.title&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)).map(c=>({year:+c.date.slice(0,4),title:String(c.title),instructor:c.instructor||"",date:c.date,endDate:c.endDate||"",start:c.start||"",end:c.end||"",location:c.location||"",roles:[],status:"active"})).filter(c=>!have.has(key(c))),
+ yrs=[...new Set(list.map(c=>c.year))].filter(y=>!db.years.includes(y));
+ if(!F){yrs.forEach(y=>db.years.push(y));list.forEach(c=>db.courses.push({id:uid(),...c}));save()}
+ else{const{fs,S}=F;for(let i=0;i<list.length;i+=400){const b=S.writeBatch(fs);list.slice(i,i+400).forEach(c=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}}));if(!i)yrs.forEach(y=>b.set(S.doc(fs,"years",String(y)),{year:y}));await b.commit()}}
+ document.querySelectorAll(".mask").forEach(m=>m.remove());alert(`已匯入 ${list.length} 堂課程`+(a.length-list.length?`，略過 ${a.length-list.length} 筆（重複或格式不符）`:""))}
 async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();year=db.years.slice().sort().pop()}render()}
 function render(){
  if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名進入。姓名僅作簡易識別，並非身分驗證。</p>
@@ -101,11 +111,11 @@ function render(){
  <div class="row card"><label style="margin:0">年度</label><select id="yr" style="width:auto">${db.years.slice().sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select>
  ${me.admin?`<button data-a="newyear">新增年度</button>`:""}<span class="sp"></span>
  <span class="tabs row">${[["cal","行事曆"],["list","課程列表"],["mine","我的報名"]].map(([k,t])=>`<button data-a="view" data-v="${k}" class="${view==k?"on":""}">${t}</button>`).join("")}</span>
- ${me.admin?`<button class="p" data-a="edit" data-id="">＋ 新增課程</button><button data-a="export">匯出報名</button>`:""}</div>
+ ${me.admin?`<button class="p" data-a="edit" data-id="">＋ 新增課程</button><button data-a="export">匯出報名</button><button data-a="import">匯入課程</button>`:""}</div>
  ${view=="cal"?cal(cs):view=="list"?list(cs):mine()}`}
 function cal(cs){const f=new Date(year,month,1),n=new Date(year,month+1,0).getDate(),p=n=>String(n).padStart(2,"0");let h="";
  for(let i=0;i<f.getDay();i++)h+=`<div></div>`;
- for(let d=1;d<=n;d++){const ds=`${year}-${p(month+1)}-${p(d)}`;h+=`<div class="cell"><b>${d}</b>${cs.filter(c=>c.date==ds).map(c=>`<button class="chip ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}</button>`).join("")}</div>`}
+ for(let d=1;d<=n;d++){const ds=`${year}-${p(month+1)}-${p(d)}`;h+=`<div class="cell"><b>${d}</b>${cs.filter(c=>c.date<=ds&&(c.endDate||c.date)>=ds).map(c=>`<button class="chip ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}</button>`).join("")}</div>`}
  return `<div class="card"><div class="row"><button data-a="mo" data-d="-1" ${month==0?"disabled":""}>‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1" ${month==11?"disabled":""}>›</button></div><div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div></div>`}
 function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">詳情／報名</button></div>
  <div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
@@ -116,7 +126,7 @@ function modal(h){const m=document.createElement("div");m.className="mask";m.inn
 function detail(id){const c=db.courses.find(x=>x.id==id),mine=mySign(id),ok=c.status=="active"&&c.year==year;
  document.querySelectorAll(".mask").forEach(m=>m.remove());
  modal(`<h2 data-det="${id}">${esc(c.title)} ${c.status=="cancelled"?'<span class="tag">已取消</span>':""}</h2><div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
- ${c.roles.map(r=>{const t=taken(r.id),full=t>=r.cap,names=db.signups.filter(s=>s.roleId==r.id).map(s=>s.name);
+ ${c.roles.length?"":'<div class="card mut" style="margin-top:8px">尚未設定職司，請組長按「修改」新增。</div>'}${c.roles.map(r=>{const t=taken(r.id),full=t>=r.cap,names=db.signups.filter(s=>s.roleId==r.id).map(s=>s.name);
  return `<div class="card ${full?"full":""}" style="margin-top:8px"><div class="row"><b>${esc(r.name)}</b><span class="mut">${t}/${r.cap}${full?"（額滿）":"，剩 "+(r.cap-t)}</span><span class="sp"></span>
  ${mine&&mine.roleId==r.id?`<button class="d" data-a="unsign" data-id="${c.id}">取消報名</button>`:`<button class="p" data-a="sign" data-id="${c.id}" data-r="${r.id}" ${!ok||full||mine?"disabled":""}>${mine?"已選其他職司":full?"額滿":"報名"}</button>`}</div>
  <div class="bar"><i style="width:${r.cap?Math.min(100,t/r.cap*100):100}%"></i></div><div class="names">${names.map(n=>`<span>${esc(n)}</span>`).join("")||'<span class="mut">尚無人報名</span>'}</div></div>`}).join("")}
@@ -124,7 +134,7 @@ function detail(id){const c=db.courses.find(x=>x.id==id),mine=mySign(id),ok=c.st
 function editor(id){const c=db.courses.find(x=>x.id==id)||{title:"",instructor:"",date:`${year}-01-01`,start:"09:00",end:"12:00",location:"",roles:[{id:uid(),name:"",cap:1}]};
  const rr=r=>`<div class="row rr" data-id="${r.id}"><input class="rn" placeholder="職司名稱" value="${esc(r.name)}" style="flex:2"><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`;
  const m=modal(`<h2>${id?"修改":"新增"}課程</h2><label>課程名稱</label><input id="f_t" value="${esc(c.title)}"><label>講師</label><input id="f_i" value="${esc(c.instructor)}">
- <label>日期（須在 ${year} 年內）</label><input id="f_d" type="date" value="${c.date}"><div class="row"><div class="sp"><label>開始</label><input id="f_s" type="time" value="${c.start||""}"></div><div class="sp"><label>結束</label><input id="f_e" type="time" value="${c.end||""}"></div></div>
+ <label>日期（須在 ${year} 年內）</label><input id="f_d" type="date" value="${c.date}"><label>結束日期（多日課程才需要填）</label><input id="f_ed" type="date" value="${c.endDate||""}"><div class="row"><div class="sp"><label>開始</label><input id="f_s" type="time" value="${c.start||""}"></div><div class="sp"><label>結束</label><input id="f_e" type="time" value="${c.end||""}"></div></div>
  <label>地點</label><input id="f_l" value="${esc(c.location)}"><label>職司與人數上限</label><div id="roles">${c.roles.map(rr).join("")}</div>
  <div class="row" style="margin-top:8px"><button data-a="addrole">＋ 新增職司</button><span class="sp"></span><button data-a="close">取消</button><button class="p" data-a="savec" data-id="${id||""}">儲存</button></div>`);
  m.rr=rr}
@@ -142,14 +152,16 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="edit"){document.querySelectorAll(".mask").forEach(m=>m.remove());editor(id)}
  else if(a=="addrole"){$("#roles").insertAdjacentHTML("beforeend",`<div class="row rr" data-id="${uid()}"><input class="rn" placeholder="職司名稱" style="flex:2"><input class="rc" type="number" min="0" value="1" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`)}
  else if(a=="rmrole"){const r=b.closest(".rr");if(taken(r.dataset.id)&&!confirm("此職司已有人報名，刪除會一併移除其報名紀錄，確定？"))return;r.remove()}
- else if(a=="savec"){const t=$("#f_t").value.trim(),d=$("#f_d").value;if(!t||!d)return alert("請填寫課程名稱與日期");if(new Date(d).getFullYear()!=year)return alert("日期必須落在 "+year+" 年");
+ else if(a=="savec"){const t=$("#f_t").value.trim(),d=$("#f_d").value;if(!t||!d)return alert("請填寫課程名稱與日期");if($("#f_ed").value&&$("#f_ed").value<d)return alert("結束日期不能早於開始日期");if(new Date(d).getFullYear()!=year)return alert("日期必須落在 "+year+" 年");
   const roles=[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name);
   if(!roles.length)return alert("至少需要一個職司");const bad=roles.find(r=>taken(r.id)>r.cap);if(bad)return alert(`「${bad.name}」目前已有 ${taken(bad.id)} 人報名，上限不能低於此數`);
-  const o={title:t,instructor:$("#f_i").value.trim(),date:d,start:$("#f_s").value,end:$("#f_e").value,location:$("#f_l").value.trim(),roles};
+  const o={title:t,instructor:$("#f_i").value.trim(),date:d,endDate:$("#f_ed").value,start:$("#f_s").value,end:$("#f_e").value,location:$("#f_l").value.trim(),roles};
   run(async()=>{await api.saveCourse(id,o);document.querySelectorAll(".mask").forEach(m=>m.remove())})}
  else if(a=="cancelc"){const c=db.courses.find(x=>x.id==id);run(()=>api.setStatus(c,c.status=="active"?"cancelled":"active"))}
  else if(a=="del"){if(confirm("刪除課程會一併刪除報名紀錄，確定？（建議改用「取消課程」保留紀錄）")){document.querySelectorAll(".mask").forEach(m=>m.remove());run(()=>api.del(id))}}
  else if(a=="export")exportCsv()
+ else if(a=="import")importUi()
+ else if(a=="doimport")run(doImport)
  else if(a=="copy"){const t=$("#csv");t.select();try{document.execCommand("copy")}catch(x){}}
  else if(a=="about")modal(`<h2>架構說明（第一階段）</h2><p class="mut">前端：單頁應用，所有資料存取集中於資料層（Adapter）。目前為 localStorage 示範實作；填入 Firebase 設定後改用 Firestore 並多人即時同步。集合：years、courses（職司內嵌）、signups（見 firestore.rules）。</p>
  <p class="mut"><b>已完成：</b>登入流程、年度切換、行事曆／列表、報名／取消、名額與單選規則、管理者課程與職司維護、CSV 匯出。<br><b>尚未完成：</b>管理者身分驗證（目前勾選即可，任何人都能自稱組長）、個人驗證碼、規則層級的額滿鎖定（目前由前端交易保證）。</p><button data-a="close">關閉</button>`)});
