@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>年度課程暨勤務管理系統 V1.0</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
+:root{--bg:#f5f6f8;--k1:#c0392b;--k2:#2f5fd0;--k3:#1f8a4c;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
-:root[data-theme=dark]{--bg:#14171d;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
+:root[data-theme=dark]{--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
 *{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:12px}
 .banner{background:var(--warn);color:var(--warnt);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
@@ -24,6 +24,8 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .cell{min-height:64px;background:var(--bg);border-radius:6px;padding:3px;font-size:12px;overflow:hidden}
 .cell b{color:var(--mut);font-weight:400}
 .chip{display:block;width:100%;text-align:left;margin-top:2px;padding:1px 4px;font-size:11px;border-radius:4px;background:var(--pri);color:var(--on);border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}
+.tag.k1{color:var(--k1);border-color:var(--k1)}.tag.k2{color:var(--k2);border-color:var(--k2)}.tag.k3{color:var(--k3);border-color:var(--k3)}
 .chip.x{background:var(--mut);text-decoration:line-through}
 .mut{color:var(--mut);font-size:13px}.tag{font-size:12px;border-radius:99px;padding:1px 8px;border:1px solid var(--bd);color:var(--mut)}
 .bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;margin:4px 0}.bar i{display:block;height:100%;background:var(--ok)}
@@ -47,6 +49,8 @@ const uid=()=>"i"+Math.random().toString(36).slice(2,10);
 // ===== 狀態 =====
 let me=null,year=null,view="cal",month=new Date().getMonth();
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let cat="all";const CATS=["總壇","分壇","禪修"],kc=c=>CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
+filt=()=>`<div class="row tabs" style="margin-bottom:10px">${["all",...CATS].map((k,i)=>`<button data-a="cat" data-k="${k}" class="${cat==k?"on":""}">${i?`<span style="color:var(--k${i})">●</span> `:""}${k=="all"?"全部":k}</button>`).join("")}</div>`;
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
 const yc=()=>db.courses.filter(c=>c.year==year).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
@@ -92,12 +96,14 @@ function importUi(){modal(`<h2>匯入課程（JSON）</h2><p class="mut">選擇�
  $("#imf").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>$("#imt").value=t)}}
 async function doImport(){let a;try{a=JSON.parse($("#imt").value)}catch(e){throw Error("內容不是有效的 JSON")}
  if(!Array.isArray(a)||!a.length)throw Error("沒有可匯入的課程");
- const key=c=>c.year+"|"+c.title+"|"+c.date,have=new Set(db.courses.map(key)),
- list=a.filter(c=>c&&c.title&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)).map(c=>({year:+c.date.slice(0,4),title:String(c.title),instructor:c.instructor||"",date:c.date,endDate:c.endDate||"",start:c.start||"",end:c.end||"",location:c.location||"",roles:[],status:"active"})).filter(c=>!have.has(key(c))),
+ const key=c=>c.year+"|"+c.title+"|"+c.date,ex=new Map(db.courses.map(c=>[key(c),c])),
+ all=a.filter(c=>c&&c.title&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)).map(c=>({year:+c.date.slice(0,4),title:String(c.title),category:c.category||"",instructor:c.instructor||"",date:c.date,endDate:c.endDate||"",start:c.start||"",end:c.end||"",location:c.location||"",roles:[],status:"active"})),
+ list=all.filter(c=>!ex.has(key(c))),upd=all.filter(c=>c.category&&ex.has(key(c))&&!ex.get(key(c)).category),
  yrs=[...new Set(list.map(c=>c.year))].filter(y=>!db.years.includes(y));
- if(!F){yrs.forEach(y=>db.years.push(y));list.forEach(c=>db.courses.push({id:uid(),...c}));save()}
- else{const{fs,S}=F;for(let i=0;i<list.length;i+=400){const b=S.writeBatch(fs);list.slice(i,i+400).forEach(c=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}}));if(!i)yrs.forEach(y=>b.set(S.doc(fs,"years",String(y)),{year:y}));await b.commit()}}
- document.querySelectorAll(".mask").forEach(m=>m.remove());alert(`已匯入 ${list.length} 堂課程`+(a.length-list.length?`，略過 ${a.length-list.length} 筆（重複或格式不符）`:""))}
+ if(!F){yrs.forEach(y=>db.years.push(y));list.forEach(c=>db.courses.push({id:uid(),...c}));upd.forEach(c=>ex.get(key(c)).category=c.category);save()}
+ else{const{fs,S}=F,ops=[...list.map(c=>b=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}})),...upd.map(c=>b=>b.update(S.doc(fs,"courses",ex.get(key(c)).id),{category:c.category})),...yrs.map(y=>b=>b.set(S.doc(fs,"years",String(y)),{year:y}))];
+  for(let i=0;i<ops.length;i+=400){const b=S.writeBatch(fs);ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}}
+ document.querySelectorAll(".mask").forEach(m=>m.remove());const sk=a.length-list.length-upd.length;alert(`新增 ${list.length} 堂課程`+(upd.length?`，補上分類 ${upd.length} 堂`:"")+(sk?`，略過 ${sk} 筆（已存在或格式不符）`:""))}
 async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();year=db.years.slice().sort().pop()}render()}
 function render(){
  if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名進入。姓名僅作簡易識別，並非身分驗證。</p>
@@ -105,19 +111,19 @@ function render(){
  <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="adm" style="width:auto"> 以組長／帶班身分進入（示範用，未驗證）</label>
  <p><button class="p" data-a="login" style="width:100%">進入</button></p>
  <div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料只存在此瀏覽器。"}</div></div>`;return}
- const cs=yc();
+ const cs=yc().filter(c=>cat=="all"||c.category==cat);
  $("#app").innerHTML=`<div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料僅存於本機瀏覽器，不會與其他人同步。"}</div>
  <header><h1>年度課程暨勤務管理系統</h1><div class="row"><span class="tag">${esc(me.name)}・${me.admin?"組長／帶班":"班員／勤務"}</span><button data-a="about">架構說明</button><button data-a="logout">登出</button></div></header>
  <div class="row card"><label style="margin:0">年度</label><select id="yr" style="width:auto">${db.years.slice().sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select>
  ${me.admin?`<button data-a="newyear">新增年度</button>`:""}<span class="sp"></span>
  <span class="tabs row">${[["cal","行事曆"],["list","課程列表"],["mine","我的報名"]].map(([k,t])=>`<button data-a="view" data-v="${k}" class="${view==k?"on":""}">${t}</button>`).join("")}</span>
  ${me.admin?`<button class="p" data-a="edit" data-id="">＋ 新增課程</button><button data-a="export">匯出報名</button><button data-a="import">匯入課程</button>`:""}</div>
- ${view=="cal"?cal(cs):view=="list"?list(cs):mine()}`}
+ ${view!="mine"?filt():""}${view=="cal"?cal(cs):view=="list"?list(cs):mine()}`}
 function cal(cs){const f=new Date(year,month,1),n=new Date(year,month+1,0).getDate(),p=n=>String(n).padStart(2,"0");let h="";
  for(let i=0;i<f.getDay();i++)h+=`<div></div>`;
- for(let d=1;d<=n;d++){const ds=`${year}-${p(month+1)}-${p(d)}`;h+=`<div class="cell"><b>${d}</b>${cs.filter(c=>c.date<=ds&&(c.endDate||c.date)>=ds).map(c=>`<button class="chip ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}</button>`).join("")}</div>`}
+ for(let d=1;d<=n;d++){const ds=`${year}-${p(month+1)}-${p(d)}`;h+=`<div class="cell"><b>${d}</b>${cs.filter(c=>c.date<=ds&&(c.endDate||c.date)>=ds).map(c=>`<button class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}</button>`).join("")}</div>`}
  return `<div class="card"><div class="row"><button data-a="mo" data-d="-1" ${month==0?"disabled":""}>‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1" ${month==11?"disabled":""}>›</button></div><div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div></div>`}
-function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">詳情／報名</button></div>
+function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${tg(c)}${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">詳情／報名</button></div>
  <div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
  <div class="mut">${c.roles.map(r=>`${esc(r.name)} ${taken(r.id)}/${r.cap}`).join("　")}</div></div>`).join(""):`<div class="card mut">${year} 年度尚無課程。</div>`}
 function mine(){const m=db.signups.filter(s=>nk(s.name)==nk(me.name)).map(s=>({s,c:db.courses.find(c=>c.id==s.courseId)})).filter(x=>x.c).sort((a,b)=>a.c.date.localeCompare(b.c.date));
@@ -125,7 +131,7 @@ function mine(){const m=db.signups.filter(s=>nk(s.name)==nk(me.name)).map(s=>({s
 function modal(h){const m=document.createElement("div");m.className="mask";m.innerHTML=`<div class="modal">${h}</div>`;m.addEventListener("click",e=>{if(e.target==m)m.remove()});document.body.appendChild(m);return m}
 function detail(id){const c=db.courses.find(x=>x.id==id),mine=mySign(id),ok=c.status=="active"&&c.year==year;
  document.querySelectorAll(".mask").forEach(m=>m.remove());
- modal(`<h2 data-det="${id}">${esc(c.title)} ${c.status=="cancelled"?'<span class="tag">已取消</span>':""}</h2><div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
+ modal(`<h2 data-det="${id}">${esc(c.title)} ${tg(c)} ${c.status=="cancelled"?'<span class="tag">已取消</span>':""}</h2><div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
  ${c.roles.length?"":'<div class="card mut" style="margin-top:8px">尚未設定職司，請組長按「修改」新增。</div>'}${c.roles.map(r=>{const t=taken(r.id),full=t>=r.cap,names=db.signups.filter(s=>s.roleId==r.id).map(s=>s.name);
  return `<div class="card ${full?"full":""}" style="margin-top:8px"><div class="row"><b>${esc(r.name)}</b><span class="mut">${t}/${r.cap}${full?"（額滿）":"，剩 "+(r.cap-t)}</span><span class="sp"></span>
  ${mine&&mine.roleId==r.id?`<button class="d" data-a="unsign" data-id="${c.id}">取消報名</button>`:`<button class="p" data-a="sign" data-id="${c.id}" data-r="${r.id}" ${!ok||full||mine?"disabled":""}>${mine?"已選其他職司":full?"額滿":"報名"}</button>`}</div>
@@ -133,13 +139,13 @@ function detail(id){const c=db.courses.find(x=>x.id==id),mine=mySign(id),ok=c.st
  <div class="row" style="margin-top:8px">${me.admin?`<button data-a="edit" data-id="${c.id}">修改</button><button data-a="cancelc" data-id="${c.id}">${c.status=="active"?"取消課程":"恢復課程"}</button><button class="d" data-a="del" data-id="${c.id}">刪除</button>`:""}<span class="sp"></span><button data-a="close">關閉</button></div>`)}
 function editor(id){const c=db.courses.find(x=>x.id==id)||{title:"",instructor:"",date:`${year}-01-01`,start:"09:00",end:"12:00",location:"",roles:[{id:uid(),name:"",cap:1}]};
  const rr=r=>`<div class="row rr" data-id="${r.id}"><input class="rn" placeholder="職司名稱" value="${esc(r.name)}" style="flex:2"><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`;
- const m=modal(`<h2>${id?"修改":"新增"}課程</h2><label>課程名稱</label><input id="f_t" value="${esc(c.title)}"><label>講師</label><input id="f_i" value="${esc(c.instructor)}">
+ const m=modal(`<h2>${id?"修改":"新增"}課程</h2><label>課程名稱</label><input id="f_t" value="${esc(c.title)}"><label>分類</label><select id="f_c"><option value="">未分類</option>${CATS.map(k=>`<option ${c.category==k?"selected":""}>${k}</option>`).join("")}</select><label>講師</label><input id="f_i" value="${esc(c.instructor)}">
  <label>日期（須在 ${year} 年內）</label><input id="f_d" type="date" value="${c.date}"><label>結束日期（多日課程才需要填）</label><input id="f_ed" type="date" value="${c.endDate||""}"><div class="row"><div class="sp"><label>開始</label><input id="f_s" type="time" value="${c.start||""}"></div><div class="sp"><label>結束</label><input id="f_e" type="time" value="${c.end||""}"></div></div>
  <label>地點</label><input id="f_l" value="${esc(c.location)}"><label>職司與人數上限</label><div id="roles">${c.roles.map(rr).join("")}</div>
  <div class="row" style="margin-top:8px"><button data-a="addrole">＋ 新增職司</button><span class="sp"></span><button data-a="close">取消</button><button class="p" data-a="savec" data-id="${id||""}">儲存</button></div>`);
  m.rr=rr}
-function exportCsv(){const q=s=>`"${String(s??"").replace(/"/g,'""')}"`,rows=[["年度","日期","課程","講師","地點","職司","姓名","報名時間"]];
- yc().forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>rows.push([c.year,c.date,c.title,c.instructor,c.location,(c.roles.find(r=>r.id==s.roleId)||{}).name,s.name,s.at])));
+function exportCsv(){const q=s=>`"${String(s??"").replace(/"/g,'""')}"`,rows=[["年度","日期","分類","課程","講師","地點","職司","姓名","報名時間"]];
+ yc().forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>rows.push([c.year,c.date,c.category||"",c.title,c.instructor,c.location,(c.roles.find(r=>r.id==s.roleId)||{}).name,s.name,s.at])));
  const t=rows.map(r=>r.map(q).join(",")).join("\n");modal(`<h2>匯出 ${year} 年報名資料（CSV）</h2><textarea id="csv" style="width:100%;height:200px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px">${esc(t)}</textarea><div class="row" style="margin-top:8px"><button class="p" data-a="copy">複製</button><button data-a="close">關閉</button></div><p class="mut">貼到 Excel／Google 試算表即可。</p>`)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id;
  if(a=="login"){const n=$("#nm").value.trim();if(!n)return alert("請輸入姓名");me={name:n,admin:$("#adm").checked};render()}
@@ -155,12 +161,13 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="savec"){const t=$("#f_t").value.trim(),d=$("#f_d").value;if(!t||!d)return alert("請填寫課程名稱與日期");if($("#f_ed").value&&$("#f_ed").value<d)return alert("結束日期不能早於開始日期");if(new Date(d).getFullYear()!=year)return alert("日期必須落在 "+year+" 年");
   const roles=[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name);
   if(!roles.length)return alert("至少需要一個職司");const bad=roles.find(r=>taken(r.id)>r.cap);if(bad)return alert(`「${bad.name}」目前已有 ${taken(bad.id)} 人報名，上限不能低於此數`);
-  const o={title:t,instructor:$("#f_i").value.trim(),date:d,endDate:$("#f_ed").value,start:$("#f_s").value,end:$("#f_e").value,location:$("#f_l").value.trim(),roles};
+  const o={title:t,instructor:$("#f_i").value.trim(),date:d,endDate:$("#f_ed").value,category:$("#f_c").value,start:$("#f_s").value,end:$("#f_e").value,location:$("#f_l").value.trim(),roles};
   run(async()=>{await api.saveCourse(id,o);document.querySelectorAll(".mask").forEach(m=>m.remove())})}
  else if(a=="cancelc"){const c=db.courses.find(x=>x.id==id);run(()=>api.setStatus(c,c.status=="active"?"cancelled":"active"))}
  else if(a=="del"){if(confirm("刪除課程會一併刪除報名紀錄，確定？（建議改用「取消課程」保留紀錄）")){document.querySelectorAll(".mask").forEach(m=>m.remove());run(()=>api.del(id))}}
  else if(a=="export")exportCsv()
  else if(a=="import")importUi()
+ else if(a=="cat"){cat=b.dataset.k;render()}
  else if(a=="doimport")run(doImport)
  else if(a=="copy"){const t=$("#csv");t.select();try{document.execCommand("copy")}catch(x){}}
  else if(a=="about")modal(`<h2>架構說明（第一階段）</h2><p class="mut">前端：單頁應用，所有資料存取集中於資料層（Adapter）。目前為 localStorage 示範實作；填入 Firebase 設定後改用 Firestore 並多人即時同步。集合：years、courses（職司內嵌）、signups（見 firestore.rules）。</p>
