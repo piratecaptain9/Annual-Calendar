@@ -99,14 +99,16 @@ function importUi(){modal(`<h2>匯入課程（JSON）</h2><p class="mut">選擇�
  $("#imf").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>$("#imt").value=t)}}
 async function doImport(){let a;try{a=JSON.parse($("#imt").value)}catch(e){throw Error("內容不是有效的 JSON")}
  if(!Array.isArray(a)||!a.length)throw Error("沒有可匯入的課程");
- const key=c=>c.year+"|"+c.title+"|"+c.date,ex=new Map(db.courses.map(c=>[key(c),c])),
- all=a.filter(c=>c&&c.title&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)).map(c=>({year:+c.date.slice(0,4),title:String(c.title),category:c.category||"",instructor:c.instructor||"",date:c.date,endDate:c.endDate||"",start:c.start||"",end:c.end||"",location:c.location||"",roles:[],status:"active"})),
- list=all.filter(c=>!ex.has(key(c))),upd=all.filter(c=>c.category&&ex.has(key(c))&&!ex.get(key(c)).category),
+ const mk=r=>(Array.isArray(r)?r:[]).filter(x=>x&&x.name).map(x=>({id:uid(),name:String(x.name),cap:Math.max(0,+x.cap||0)})),
+ key=c=>c.year+"|"+c.title+"|"+c.date,ex=new Map(db.courses.map(c=>[key(c),c])),
+ all=a.filter(c=>c&&c.title&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)).map(c=>({year:+c.date.slice(0,4),title:String(c.title),category:c.category||"",instructor:c.instructor||"",date:c.date,endDate:c.endDate||"",start:c.start||"",end:c.end||"",location:c.location||"",roles:mk(c.roles),status:"active"})),
+ list=all.filter(c=>!ex.has(key(c))),
+ upd=all.map(c=>{const o=ex.get(key(c));if(!o)return null;const p={};if(c.category&&!o.category)p.category=c.category;if(c.roles.length&&!(o.roles||[]).length){p.roles=c.roles;p.counts={}}return Object.keys(p).length?{o,p}:null}).filter(Boolean),
  yrs=[...new Set(list.map(c=>c.year))].filter(y=>!db.years.includes(y));
- if(!F){yrs.forEach(y=>db.years.push(y));list.forEach(c=>db.courses.push({id:uid(),...c}));upd.forEach(c=>ex.get(key(c)).category=c.category);save()}
- else{const{fs,S}=F,ops=[...list.map(c=>b=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}})),...upd.map(c=>b=>b.update(S.doc(fs,"courses",ex.get(key(c)).id),{category:c.category})),...yrs.map(y=>b=>b.set(S.doc(fs,"years",String(y)),{year:y}))];
+ if(!F){yrs.forEach(y=>db.years.push(y));list.forEach(c=>db.courses.push({id:uid(),...c}));upd.forEach(u=>Object.assign(u.o,u.p));save()}
+ else{const{fs,S}=F,ops=[...list.map(c=>b=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}})),...upd.map(u=>b=>b.update(S.doc(fs,"courses",u.o.id),u.p)),...yrs.map(y=>b=>b.set(S.doc(fs,"years",String(y)),{year:y}))];
   for(let i=0;i<ops.length;i+=400){const b=S.writeBatch(fs);ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}}
- document.querySelectorAll(".mask").forEach(m=>m.remove());const sk=a.length-list.length-upd.length;alert(`新增 ${list.length} 堂課程`+(upd.length?`，補上分類 ${upd.length} 堂`:"")+(sk?`，略過 ${sk} 筆（已存在或格式不符）`:""))}
+ document.querySelectorAll(".mask").forEach(m=>m.remove());const sk=a.length-list.length-upd.length;alert(`新增 ${list.length} 堂課程`+(upd.length?`，更新 ${upd.length} 堂（補上分類或初始職司）`:"")+(sk?`，略過 ${sk} 筆（已完整或格式不符）`:""))}
 async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();year=db.years.slice().sort().pop()}render()}
 function render(){
  if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名進入。姓名僅作簡易識別，並非身分驗證。</p>
