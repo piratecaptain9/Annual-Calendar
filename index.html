@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>年度課程暨勤務管理系統 V1.0</title>
 <style>
-:root{--bg:#f5f6f8;--k1:#c0392b;--k2:#2f5fd0;--k3:#1f8a4c;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
+:root{--bg:#f5f6f8;--k1:#c0392b;--k2:#2f5fd0;--k3:#1f8a4c;--k4:#8e44ad;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
-:root[data-theme=dark]{--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k4:#c08ae8;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
+:root[data-theme=dark]{--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k4:#c08ae8;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
 *{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:12px}
 .banner{background:var(--warn);color:var(--warnt);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
@@ -24,10 +24,10 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .cell{min-height:64px;background:var(--bg);border-radius:6px;padding:3px;font-size:12px;overflow:hidden}
 .cell b{color:var(--mut);font-weight:400}
 .chip{display:block;width:100%;text-align:left;margin-top:2px;padding:1px 4px;font-size:11px;border-radius:4px;background:var(--pri);color:var(--on);border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}
-.tag.k1{color:var(--k1);border-color:var(--k1)}.tag.k2{color:var(--k2);border-color:var(--k2)}.tag.k3{color:var(--k3);border-color:var(--k3)}
+.chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}.chip.k4{background:var(--k4)}
+.tag.k1{color:var(--k1);border-color:var(--k1)}.tag.k2{color:var(--k2);border-color:var(--k2)}.tag.k3{color:var(--k3);border-color:var(--k3)}.tag.k4{color:var(--k4);border-color:var(--k4)}
 .calbox{touch-action:pan-y}.cell{cursor:pointer}.cell.sel{outline:2px solid var(--pri)}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:1px;background:var(--mut)}.dot.k1{background:var(--k1)}.dot.k2{background:var(--k2)}.dot.k3{background:var(--k3)}.dot.x{opacity:.35}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:1px;background:var(--mut)}.dot.k1{background:var(--k1)}.dot.k2{background:var(--k2)}.dot.k3{background:var(--k3)}.dot.k4{background:var(--k4)}.dot.x{opacity:.35}
 .ag b{display:block;margin-top:10px}.agi{display:flex;gap:8px;align-items:center;width:100%;text-align:left;margin-top:6px;padding:10px 12px;font-size:15px}
 .chip.x{background:var(--mut);text-decoration:line-through}
 .mut{color:var(--mut);font-size:13px}.tag{font-size:12px;border-radius:99px;padding:1px 8px;border:1px solid var(--bd);color:var(--mut)}
@@ -57,8 +57,8 @@ let cat="all",zoom=innerWidth<600?0:1,selDay=null;const onDay=(cs,ds)=>cs.filter
 const isMulti=c=>c.endDate&&c.endDate!=c.date,md=d=>+d.slice(5,7)+"/"+ +d.slice(8),
 dayList=c=>{const r=[];for(let t=Date.parse(c.date+"T00:00:00Z"),e=Date.parse((c.endDate||c.date)+"T00:00:00Z");t<=e;t+=864e5)r.push(new Date(t).toISOString().slice(0,10));return r},
 sdays=(s,c)=>s.days&&s.days.length?s.days:dayList(c),
-dtxt=(s,c)=>{const a=sdays(s,c);return a.length==dayList(c).length?"全程":a.map(md).join("、")};const CATS=["總壇","分壇","禪修"],kc=c=>CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
-filt=()=>`<div class="row tabs" style="margin-bottom:10px">${["all",...CATS].map((k,i)=>`<button data-a="cat" data-k="${k}" class="${cat==k?"on":""}">${i?`<span style="color:var(--k${i})">●</span> `:""}${k=="all"?"全部":k}</button>`).join("")}</div>`;
+dtxt=(s,c)=>{const a=sdays(s,c);return a.length==dayList(c).length?"全程":a.map(md).join("、")};const CATS=["總壇","分壇","禪修"],kc=c=>c.category=="個人"?4:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
+filt=()=>`<div class="row tabs" style="margin-bottom:10px">${["all",...CATS,"個人"].map((k,i)=>`<button data-a="cat" data-k="${k}" class="${cat==k?"on":""}">${i?`<span style="color:var(--k${i})">●</span> `:""}${k=="all"?"全部":k}</button>`).join("")}<span class="sp"></span><button data-a="pe" data-id="">＋ 個人行程</button><button data-a="pebk">備份／還原</button></div>`;
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
 const yc=()=>db.courses.filter(c=>c.year==year).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
@@ -122,6 +122,13 @@ async function doImport(){let a;try{a=JSON.parse($("#imt").value)}catch(e){throw
  else{const{fs,S}=F,ops=[...list.map(c=>b=>b.set(S.doc(S.collection(fs,"courses")),{...c,counts:{}})),...upd.map(u=>b=>b.update(S.doc(fs,"courses",u.o.id),u.p)),...yrs.map(y=>b=>b.set(S.doc(fs,"years",String(y)),{year:y}))];
   for(let i=0;i<ops.length;i+=400){const b=S.writeBatch(fs);ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}}
  document.querySelectorAll(".mask").forEach(m=>m.remove());const sk=a.length-list.length-upd.length;alert(`新增 ${list.length} 堂課程`+(upd.length?`，更新 ${upd.length} 堂（補上分類或初始職司）`:"")+(sk?`，略過 ${sk} 筆（已完整或格式不符）`:""))}
+const peKey=()=>"acms_pe_"+nk(me.name);
+function peRaw(){try{return JSON.parse(localStorage.getItem(peKey()))||[]}catch(e){return[]}}
+function peSave(a){try{localStorage.setItem(peKey(),JSON.stringify(a))}catch(e){alert("無法儲存：瀏覽器不允許儲存資料（可能是無痕模式）")}}
+const peList=()=>peRaw().filter(e=>e.date&&e.date.startsWith(year+"-")).map(e=>({id:"pe:"+e.id,title:e.title,date:e.date,endDate:"",start:e.start||"",end:e.end||"",location:"",note:e.note||"",category:"個人",status:"active",roles:[],_pe:true}));
+function peEdit(id){const e=peRaw().find(x=>x.id==id)||{title:"",date:selDay||`${year}-${String(month+1).padStart(2,"0")}-01`,start:"",end:"",note:""};
+ modal(`<h2>${id?"個人行程":"新增個人行程"}</h2><p class="mut">只存在這台裝置，別人看不到。</p><label>標題</label><input id="pe_t" value="${esc(e.title)}"><label>日期</label><input id="pe_d" type="date" value="${e.date}"><div class="row"><div class="sp"><label>開始</label><input id="pe_s" type="time" value="${e.start||""}"></div><div class="sp"><label>結束</label><input id="pe_e" type="time" value="${e.end||""}"></div></div><label>備註</label><input id="pe_n" value="${esc(e.note||"")}"><div class="row" style="margin-top:8px">${id?`<button class="d" data-a="pedel" data-id="${id}">刪除</button>`:""}<span class="sp"></span><button data-a="close">取消</button><button class="p" data-a="pesave" data-id="${id}">儲存</button></div>`)}
+function peBackup(){modal(`<h2>個人行程備份／還原</h2><p class="mut">備份：按「複製」，把內容貼到記事本或傳給自己存起來。還原：把備份內容貼進下方框內，按「還原」（會與現有行程合併，不會覆蓋）。</p><textarea id="pet" style="width:100%;height:180px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px">${esc(JSON.stringify(peRaw()))}</textarea><div class="row" style="margin-top:8px"><button data-a="pecopy">複製</button><button class="p" data-a="perestore">還原</button><span class="sp"></span><button data-a="close">關閉</button></div>`)}
 async function claimLevel(pw){const{fs,S}=F,ref=S.doc(fs,"claims",F.uid);
  for(const[lv,n]of[["super",2],["manager",1]]){try{await S.setDoc(ref,{level:lv,k:pw});return n}catch(e){}}return 0}
 function fillRoles(){const c=db.courses.find(x=>x.id==($("#bc")||{}).value),e=$("#br");if(e)e.innerHTML=c?c.roles.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join(""):""}
@@ -139,7 +146,7 @@ function render(){
  <label>姓名</label><input id="nm" maxlength="20" autofocus><label>管理密碼（一般班員不用填）</label><input id="pw" type="password" autocomplete="current-password">${connected?"":'<p class="mut">示範密碼：一般管理者 manager、後台管理者 admin</p>'}<p class="mut">登入後，這台裝置會記住你的姓名。</p>
  <p><button class="p" data-a="login" style="width:100%">進入</button></p>
  <div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料只存在此瀏覽器。"}</div></div>`;return}
- const cs=yc().filter(c=>cat=="all"||c.category==cat);
+ const cs=yc().filter(c=>cat=="all"||c.category==cat).concat(cat=="all"||cat=="個人"?peList():[]).sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||"")));
  $("#app").innerHTML=`<div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料僅存於本機瀏覽器，不會與其他人同步。"}</div>
  <header><h1>年度課程暨勤務管理系統</h1><div class="row"><span class="tag">${esc(me.name)}・${["班員／勤務","管理者","後台管理者"][me.lv]}</span><button data-a="about">架構說明</button><button data-a="logout">登出</button></div></header>
  <div class="row card"><label style="margin:0">年度</label><select id="yr" style="width:auto">${db.years.slice().sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select>
@@ -158,8 +165,8 @@ function cal(cs){const f=new Date(year,month,1),n=new Date(year,month+1,0).getDa
   body=`<div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div>`;
   if(selDay&&selDay.startsWith(year+"-"+p(month+1))){const l=onDay(cs,selDay);body+=`<div style="margin-top:8px"><b>${+selDay.slice(8)} 日</b>${l.length?l.map(item).join(""):' <span class="mut">當天沒有課程</span>'}</div>`}}
  return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px">雙指縮放或按 ＋／－ 切換：圓點、標籤、列表</div></div>`}
-function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${tg(c)}${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">詳情／報名</button></div>
- <div class="mut">${fmt(c)}・${esc(c.location||"")}・講師：${esc(c.instructor||"—")}</div>
+function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${tg(c)}${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">${c._pe?"檢視／修改":"詳情／報名"}</button></div>
+ <div class="mut">${fmt(c)}${c._pe?(c.note?"・"+esc(c.note):""):"・"+esc(c.location||"")+"・講師："+esc(c.instructor||"—")}</div>
  <div class="mut">${c.roles.map(r=>`${esc(r.name)} ${taken(r.id)}/${r.cap}`).join("　")}</div></div>`).join(""):`<div class="card mut">${year} 年度尚無課程。</div>`}
 function mine(){const m=db.signups.filter(s=>nk(s.name)==nk(me.name)).map(s=>({s,c:db.courses.find(c=>c.id==s.courseId)})).filter(x=>x.c&&x.c.year==year).sort((a,b)=>a.c.date.localeCompare(b.c.date));
  return `<div class="card"><h2>我的報名紀錄（${year} 年度）</h2>${m.length?m.map(({s,c})=>`<div class="row" style="padding:6px 0;border-top:1px solid var(--bd)"><span>${c.year}｜${fmt(c)}｜${esc(c.title)}｜<b>${esc((c.roles.find(r=>r.id==s.roleId)||{}).name)}</b>${isMulti(c)?"｜"+dtxt(s,c):""}${c.status=="cancelled"?" (課程已取消)":""}</span><span class="sp"></span>${c.year==year&&c.status=="active"?`<button class="d" data-a="unsign" data-id="${c.id}">取消報名</button>`:""}</div>`).join(""):'<span class="mut">尚無報名紀錄。</span>'}</div>`}
@@ -191,7 +198,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
    me={name:n,lv};try{localStorage.setItem("acms_name",n);if(!F)localStorage.setItem("acms_lv",lv)}catch(e){}render()})()}
  else if(a=="logout"){(async()=>{try{localStorage.removeItem("acms_name");localStorage.removeItem("acms_lv")}catch(e){}
   if(F){try{await F.S.deleteDoc(F.S.doc(F.fs,"claims",F.uid))}catch(e){}F.lv=0}me=null;if(view=="admin")view="cal";render()})()}else if(a=="view"){view=b.dataset.v;render()}
- else if(a=="mo"){month+=+b.dataset.d;selDay=null;render()}else if(a=="open")detail(id)
+ else if(a=="mo"){month+=+b.dataset.d;selDay=null;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else detail(id)}
  else if(a=="close")b.closest(".mask").remove()
  else if(a=="sign"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(isMulti(c)&&!dd.length)return alert("請至少勾選一天");run(()=>api.sign(c,c.roles.find(x=>x.id==b.dataset.r),dd))}
  else if(a=="setdays"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(!dd.length)return alert("請至少勾選一天");run(()=>api.setDays(c,dd))}
@@ -213,6 +220,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="addsign"){const c=db.courses.find(x=>x.id==id),r=c.roles.find(x=>x.id==b.dataset.r),n=b.parentNode.querySelector("input").value.trim();if(!n)return alert("請輸入姓名");run(()=>api.sign(c,r,[],n))}
  else if(a=="adminadd"){const c=db.courses.find(x=>x.id==$("#bc").value),r=c&&c.roles.find(x=>x.id==$("#br").value),n=$("#bn").value.trim();if(!r||!n)return alert("請選擇課程、職司並輸入姓名");run(()=>api.sign(c,r,[],n))}
  else if(a=="setpw"){const m=$("#pw1").value,sp=$("#pw2").value;if(!m&&!sp)return alert("請輸入要變更的密碼");if((m&&m.length<4)||(sp&&sp.length<4))return alert("密碼至少 4 個字元");run(async()=>{await api.setPw(m,sp);alert("密碼已更新")})}
+ else if(a=="pe")peEdit("")
+ else if(a=="pesave"){const t=$("#pe_t").value.trim(),d=$("#pe_d").value;if(!t||!d)return alert("請填寫標題與日期");const l=peRaw(),o={id:id||uid(),title:t,date:d,start:$("#pe_s").value,end:$("#pe_e").value,note:$("#pe_n").value.trim()},i=l.findIndex(x=>x.id==id);if(i>=0)l[i]=o;else l.push(o);peSave(l);document.querySelectorAll(".mask").forEach(m=>m.remove());render()}
+ else if(a=="pedel"){if(confirm("刪除這個個人行程？")){peSave(peRaw().filter(x=>x.id!=id));document.querySelectorAll(".mask").forEach(m=>m.remove());render()}}
+ else if(a=="pebk")peBackup()
+ else if(a=="pecopy"){const t=$("#pet");t.select();try{document.execCommand("copy")}catch(e){}}
+ else if(a=="perestore"){let x;try{x=JSON.parse($("#pet").value)}catch(e){return alert("內容不是有效的備份")}if(!Array.isArray(x))return alert("內容不是有效的備份");const cur=peRaw(),ids=new Set(cur.map(e=>e.id)),add=x.filter(e=>e&&e.title&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&!ids.has(e.id)).map(e=>({id:e.id||uid(),title:String(e.title),date:e.date,start:e.start||"",end:e.end||"",note:e.note||""}));peSave(cur.concat(add));document.querySelectorAll(".mask").forEach(m=>m.remove());alert(`已還原 ${add.length} 筆個人行程`);render()}
  else if(a=="day"){selDay=selDay==b.dataset.d?null:b.dataset.d;render()}
  else if(a=="zm"){zoom=Math.max(0,Math.min(2,zoom+ +b.dataset.d));render()}
  else if(a=="cat"){cat=b.dataset.k;render()}
