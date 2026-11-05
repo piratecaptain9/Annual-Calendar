@@ -27,7 +27,7 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .chip{display:block;width:100%;text-align:left;margin-top:2px;padding:1px 4px;font-size:11px;border-radius:4px;background:var(--pri);color:var(--on);border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}.chip.k4{background:var(--k4);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.4)}.chip.k5{background:var(--k5)}
 .tag.k1{color:var(--k1);border-color:var(--k1)}.tag.k2{color:var(--k2);border-color:var(--k2)}.tag.k3{color:var(--k3);border-color:var(--k3)}.tag.k4{color:var(--k4t);border-color:var(--k4)}.tag.k5{color:var(--k5);border-color:var(--k5)}
-.calbox{touch-action:pan-y}.cell{cursor:pointer}.cell.sel{outline:2px solid var(--pri)}
+.cell{cursor:pointer}.cell.sel{outline:2px solid var(--pri)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:1px;background:var(--mut)}.dot.k1{background:var(--k1)}.dot.k2{background:var(--k2)}.dot.k3{background:var(--k3)}.dot.k4{background:var(--k4)}.dot.k5{background:var(--k5)}.dot.x{opacity:.35}
 .ag b{display:block;margin-top:10px}.agi{display:flex;gap:8px;align-items:center;width:100%;text-align:left;margin-top:6px;padding:10px 12px;font-size:15px}
 .cell.hp{background:var(--hp)}.cell.hy{background:var(--hy)}.cell.hp b{color:var(--hpt)}.cell.today b{background:var(--pri);color:var(--on);border-radius:99px;padding:0 6px;font-weight:600}.ag b.hp{color:var(--hpt)}.ag b.hy{background:var(--hy);padding:0 6px;border-radius:4px}
@@ -203,7 +203,7 @@ function cal(cs){const ts=new Date().toLocaleDateString("sv-SE"),f=new Date(year
   for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));h+=`<div class="cell ${selDay==ds(d)?"sel":""} ${mc(ds(d))} ${ds(d)==ts?"today":""}" data-a="day" data-d="${ds(d)}"><b>${d}</b>${zoom==0?`<div>${l.map(c=>`<span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>`).join("")}</div>`:l.map(c=>`<div class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}">${esc(c.title)}${zt(c)}</div>`).join("")}</div>`}
   body=`<div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div>`;
   if(selDay&&selDay.startsWith(year+"-"+p(month+1))){const l=onDay(cs,selDay);body+=`<div class="card" id="daypanel" style="margin:10px 0 0;padding:10px"><b style="font-size:16px">${month+1}/${+selDay.slice(8)}（${"日一二三四五六"[new Date(selDay+"T00:00:00").getDay()]}）</b>${l.length?l.map(item).join(""):' <span class="mut">當天沒有課程</span>'}</div>`}}
- return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px"><span class="lg hp"></span> 例假日　<span class="lg hy"></span> 宏天操持　｜　雙指縮放，或點上方「圓點／標籤／列表」切換顯示方式</div></div>`}
+ return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px"><span class="lg hp"></span> 例假日　<span class="lg hy"></span> 宏天操持　｜　雙指可放大縮小畫面</div></div>`}
 function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${tg(c)}${c.zones&&c.zones.length?`<span class="tag">${esc(c.zones.join("、"))}</span>`:""}${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">${c._pe?"檢視／修改":"詳情／報名"}</button></div>
  <div class="mut">${fmt(c)}${c._pe?(c.note?"・"+esc(c.note):""):"・"+esc(c.location||"")+"・講師："+esc(c.instructor||"—")}</div>
  <div class="mut">${c.roles.map(r=>`${esc(r.name)} ${taken(r.id)}/${r.cap}`).join("　")}</div></div>`).join(""):`<div class="card mut">${year} 年度尚無課程。</div>`}
@@ -293,20 +293,5 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
 document.addEventListener("change",e=>{if(e.target.id=="yr"){year=+e.target.value;month=0;selDay=null;yearAuto=false;render()}else if(e.target.id=="bc")fillRoles();else if(e.target.id=="f_c"){const li=e.target.value=="了愿";$("#zn").style.display=li?"":"none";$("#leadbox").style.display=li?"none":"";if(li){document.querySelectorAll("#leads input").forEach(i=>i.checked=false);document.querySelectorAll(".rr").forEach(r=>{if(r.querySelector(".rn").value!="班員"&&!taken(r.dataset.id))r.remove()});if(!document.querySelector(".rr"))$("#roles").insertAdjacentHTML("beforeend",roleRow({id:uid(),name:"班員",cap:stdCap()["班員"]}))}}else if(e.target.closest("#leads")&&!e.target.checked&&taken(e.target.dataset.id)&&!confirm("此職司已有指派人員，取消勾選並儲存後會一併移除，確定嗎？"))e.target.checked=true});
 const drafts={};document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.ri)drafts[e.target.dataset.ri]=e.target.value});
 document.addEventListener("keydown",e=>{if(e.key=="Enter"&&(e.target.id=="nm"||e.target.id=="pw")){const l=document.querySelector("[data-a=login]");if(l)l.click()}});
-let gz=false,pd=0,base=0;const tp=new Map();
-function toast(t){let e=document.getElementById("toast");if(!e){e=document.createElement("div");e.id="toast";e.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fff;padding:8px 18px;border-radius:99px;font-size:15px;z-index:20;pointer-events:none";document.body.appendChild(e)}e.textContent=t;e.style.display="block";clearTimeout(e._t);e._t=setTimeout(()=>{e.style.display="none"},1200)}
-function zstep(dir){const z=Math.max(0,Math.min(2,zoom+dir));if(z===zoom)return;zoom=z;render();toast("顯示方式："+["圓點","標籤","列表"][z])}
-const tdist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY),pdist=()=>{const a=[...tp.values()];return a.length>1?Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y):0};
-// 雙指縮放：同時支援 Pointer Events 與 Touch Events，兩者共用 gz，一次手勢只切換一階
-document.addEventListener("pointerdown",e=>{if(e.pointerType!="touch")return;if(e.isPrimary){tp.clear();gz=false;base=0}
- if(!e.target.closest(".calbox")){tp.clear();return}tp.set(e.pointerId,{x:e.clientX,y:e.clientY});if(tp.size==2){base=pdist();gz=false}});
-document.addEventListener("pointermove",e=>{if(!tp.has(e.pointerId))return;tp.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(tp.size==2&&base&&!gz){const r=pdist()/base;if(r>1.2||r<.83){gz=true;zstep(r>1?1:-1)}}});
-const pu=e=>{tp.delete(e.pointerId);if(tp.size<2){base=0;gz=false}};document.addEventListener("pointerup",pu);document.addEventListener("pointercancel",pu);
-document.addEventListener("touchstart",e=>{if(e.touches.length==1){gz=false;pd=0}if(e.touches.length==2&&e.target.closest&&e.target.closest(".calbox")){pd=tdist(e.touches);gz=false}},{passive:true});
-document.addEventListener("touchmove",e=>{if(e.touches.length==2&&pd&&!gz&&e.target.closest&&e.target.closest(".calbox")){const r=tdist(e.touches)/pd;if(r>1.2||r<.83){gz=true;zstep(r>1?1:-1)}}},{passive:true});
-document.addEventListener("touchend",e=>{if(e.touches.length<2){pd=0;gz=false}},{passive:true});
-// 電腦觸控板雙指（Ctrl＋滾輪）
-let wt=0;document.addEventListener("wheel",e=>{if(e.ctrlKey&&e.target.closest&&e.target.closest(".calbox")){e.preventDefault();const n=Date.now();if(n-wt>350){wt=n;zstep(e.deltaY<0?1:-1)}}},{passive:false});
 init();
 </script></body></html>
