@@ -10,6 +10,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 *{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:12px}
 .banner{background:var(--warn);color:var(--warnt);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+.who{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}.who b{font-size:19px}.who span{font-size:13px;color:var(--mut)}
 header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
 h1{font-size:18px;margin:0}h2{font-size:16px;margin:0 0 8px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
@@ -91,7 +92,7 @@ async function startFirebase(){
  const on=(n,f)=>S.onSnapshot(S.collection(fs,n),q=>{f(q.docs.map(d=>({...d.data(),id:d.id})));if(me)refresh()},e=>alert("讀取失敗："+e.message));
  on("courses",a=>{db.courses=a;pickYear()});on("signups",a=>db.signups=a);
  on("years",a=>{db.years=a.map(x=>+x.id);db.marks={};a.forEach(x=>{Object.assign(db.marks,x.marks||{});if(x.std)db.std=x.std});const y=new Date().getFullYear();
-  if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else{if(year==null||!db.years.includes(year))year=Math.max(...db.years);pickYear()}})}
+  if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else{if(year==null)year=Math.max(...db.years);pickYear()}})}
 const api={
  async sign(c,r,dd,nm){const who=(nm||me.name).trim(),dy=isMulti(c)&&dd&&dd.length?{days:dd}:{};
   if(isLead(r)&&!nm)throw Error("此職司由後台指派，請洽管理者");
@@ -181,23 +182,23 @@ function render(){
  <div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料只存在此瀏覽器。"}</div></div>`;return}
  const cs=yc().filter(c=>catOn[c.category]!==false).concat(catOn["個人"]!==false?peList():[]).sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||"")));
  $("#app").innerHTML=`<div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料僅存於本機瀏覽器，不會與其他人同步。"}</div>
- <header><h1>年度課程暨勤務管理系統</h1><div class="row"><span class="tag">${esc(me.name)}・${["班員／勤務","管理者","後台管理者"][me.lv]}</span><button data-a="about">架構說明</button><button data-a="logout">登出</button></div></header>
- <div class="row card"><label style="margin:0">年度</label><select id="yr" style="width:auto">${db.years.slice().sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select>
+ <header><h1>年度課程暨勤務管理系統</h1><div class="row"><div class="who"><b>${esc(me.name)}</b><span>${["班員／勤務","管理者","後台管理者"][me.lv]}</span></div><button data-a="logout">登出</button></div></header>
+ <div class="row card"><label style="margin:0">年度</label><select id="yr" style="width:auto">${[...new Set([...db.years,year])].sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select>
  ${me.lv==2?`<button data-a="newyear">新增年度</button>`:""}<span class="sp"></span>
  <span class="tabs row">${[["cal","行事曆"],["list","課程列表"],["mine","我的報名"],...(me.lv==2?[["admin","後台"]]:[])].map(([k,t])=>`<button data-a="view" data-v="${k}" class="${view==k?"on":""}">${t}</button>`).join("")}</span>
  ${me.lv==2?`<button class="p" data-a="edit" data-id="">＋ 新增課程</button>`:""}${me.lv>=1?`<button data-a="export">匯出報名</button>`:""}${me.lv==2?`<button data-a="import">匯入課程</button>`:""}</div>
  ${view=="cal"||view=="list"?filt():""}${view=="cal"?cal(cs):view=="list"?list(cs):view=="admin"&&me.lv==2?admin():mine()}`;if(view=="admin"&&me.lv==2)fillRoles()}
 function cal(cs){const ts=new Date().toLocaleDateString("sv-SE"),f=new Date(year,month,1),n=new Date(year,month+1,0).getDate(),p=n=>String(n).padStart(2,"0"),ds=d=>`${year}-${p(month+1)}-${p(d)}`;
- const nav=`<div class="row"><button data-a="mo" data-d="-1" ${month==0?"disabled":""}>‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1" ${month==11?"disabled":""}>›</button><button data-a="today">今天</button><span class="sp"></span><button data-a="zm" data-d="-1" ${zoom==0?"disabled":""}>－</button><button data-a="zm" data-d="1" ${zoom==2?"disabled":""}>＋</button></div>`;
+ const nav=`<div class="row"><button data-a="mo" data-d="-1">‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1">›</button><button data-a="today">今天</button></div><div class="row tabs" style="margin-top:8px"><span class="mut">顯示</span>${[["圓點",0],["標籤",1],["列表",2]].map(([t,i])=>`<button class="${zoom==i?"on":""}" data-a="zset" data-z="${i}">${t}</button>`).join("")}</div>`;
  const item=c=>`<button class="agi" data-a="open" data-id="${c.id}"><span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>${esc(c.title)}${zt(c)}${c.status=="cancelled"?" （已取消）":""}</button>`;
  let body="";
  if(zoom==2){for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));if(l.length)body+=`<div class="ag"><b class="${mc(ds(d))}">${month+1}/${d}（${"日一二三四五六"[new Date(year,month,d).getDay()]}）</b>${l.map(item).join("")}</div>`}
   body=body||'<p class="mut">本月沒有課程。</p>'}
  else{let h="";for(let i=0;i<f.getDay();i++)h+=`<div></div>`;
-  for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));h+=`<div class="cell ${selDay==ds(d)?"sel":""} ${mc(ds(d))} ${ds(d)==ts?"today":""}" data-a="day" data-d="${ds(d)}"><b>${d}</b>${zoom==0?`<div>${l.map(c=>`<span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>`).join("")}</div>`:l.map(c=>`<button class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}${zt(c)}</button>`).join("")}</div>`}
+  for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));h+=`<div class="cell ${selDay==ds(d)?"sel":""} ${mc(ds(d))} ${ds(d)==ts?"today":""}" data-a="day" data-d="${ds(d)}"><b>${d}</b>${zoom==0?`<div>${l.map(c=>`<span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>`).join("")}</div>`:l.map(c=>`<div class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}">${esc(c.title)}${zt(c)}</div>`).join("")}</div>`}
   body=`<div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div>`;
-  if(selDay&&selDay.startsWith(year+"-"+p(month+1))){const l=onDay(cs,selDay);body+=`<div style="margin-top:8px"><b>${+selDay.slice(8)} 日</b>${l.length?l.map(item).join(""):' <span class="mut">當天沒有課程</span>'}</div>`}}
- return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px"><span class="lg hp"></span> 例假日　<span class="lg hy"></span> 宏天操持　｜　雙指縮放或按 ＋／－ 切換：圓點、標籤、列表</div></div>`}
+  if(selDay&&selDay.startsWith(year+"-"+p(month+1))){const l=onDay(cs,selDay);body+=`<div class="card" id="daypanel" style="margin:10px 0 0;padding:10px"><b style="font-size:16px">${month+1}/${+selDay.slice(8)}（${"日一二三四五六"[new Date(selDay+"T00:00:00").getDay()]}）</b>${l.length?l.map(item).join(""):' <span class="mut">當天沒有課程</span>'}</div>`}}
+ return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px"><span class="lg hp"></span> 例假日　<span class="lg hy"></span> 宏天操持　｜　雙指縮放，或點上方「圓點／標籤／列表」切換顯示方式</div></div>`}
 function list(cs){return cs.length?cs.map(c=>`<div class="card"><div class="row"><b>${esc(c.title)}</b>${tg(c)}${c.zones&&c.zones.length?`<span class="tag">${esc(c.zones.join("、"))}</span>`:""}${c.status=="cancelled"?'<span class="tag">已取消</span>':""}<span class="sp"></span><button data-a="open" data-id="${c.id}">${c._pe?"檢視／修改":"詳情／報名"}</button></div>
  <div class="mut">${fmt(c)}${c._pe?(c.note?"・"+esc(c.note):""):"・"+esc(c.location||"")+"・講師："+esc(c.instructor||"—")}</div>
  <div class="mut">${c.roles.map(r=>`${esc(r.name)} ${taken(r.id)}/${r.cap}`).join("　")}</div></div>`).join(""):`<div class="card mut">${year} 年度尚無課程。</div>`}
@@ -243,7 +244,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
    me={name:n,lv};try{localStorage.setItem("acms_name",n);if(!F)localStorage.setItem("acms_lv",lv)}catch(e){}render()})()}
  else if(a=="logout"){(async()=>{try{localStorage.removeItem("acms_name");localStorage.removeItem("acms_lv")}catch(e){}
   if(F){try{await F.S.deleteDoc(F.S.doc(F.fs,"claims",F.uid))}catch(e){}F.lv=0}me=null;if(view=="admin")view="cal";render()})()}else if(a=="view"){view=b.dataset.v;render()}
- else if(a=="mo"){month+=+b.dataset.d;selDay=null;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else if(id.startsWith("m:"))mergeOpen(id);else detail(id)}
+ else if(a=="mo"){let m=month+ +b.dataset.d,y=year;if(m<0){m=11;y--}else if(m>11){m=0;y++}if(y<2000||y>2099)return;month=m;year=y;selDay=null;yearAuto=false;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else if(id.startsWith("m:"))mergeOpen(id);else detail(id)}
  else if(a=="close")b.closest(".mask").remove()
  else if(a=="sign"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(isMulti(c)&&!dd.length)return alert("請至少勾選一天");run(()=>api.sign(c,c.roles.find(x=>x.id==(b.dataset.r||($("#sr")||{}).value)),dd))}
  else if(a=="setdays"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(!dd.length)return alert("請至少勾選一天");run(()=>api.setDays(c,dd))}
@@ -276,7 +277,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="pecopy"){const t=$("#pet");t.select();try{document.execCommand("copy")}catch(e){}}
  else if(a=="perestore"){let x;try{x=JSON.parse($("#pet").value)}catch(e){return alert("內容不是有效的備份")}if(!Array.isArray(x))return alert("內容不是有效的備份");const cur=peRaw(),ids=new Set(cur.map(e=>e.id)),add=x.filter(e=>e&&e.title&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&!ids.has(e.id)).map(e=>({id:e.id||uid(),title:String(e.title),date:e.date,start:e.start||"",end:e.end||"",note:e.note||""}));peSave(cur.concat(add));document.querySelectorAll(".mask").forEach(m=>m.remove());alert(`已還原 ${add.length} 筆個人行程`);render()}
  else if(a=="today"){yearAuto=true;pickYear();month=new Date().getMonth();selDay=null;render()}
- else if(a=="day"){selDay=selDay==b.dataset.d?null:b.dataset.d;render()}
+ else if(a=="day"){selDay=b.dataset.d;render();const e=$("#daypanel");if(e)e.scrollIntoView({block:"nearest",behavior:"smooth"})}
+ else if(a=="zset"){zoom=+b.dataset.z;render()}
  else if(a=="zm"){zoom=Math.max(0,Math.min(2,zoom+ +b.dataset.d));render()}
  else if(a=="cat"){catOn[b.dataset.k]=catOn[b.dataset.k]===false;saveCats();render()}
  else if(a=="doimport")run(doImport)
