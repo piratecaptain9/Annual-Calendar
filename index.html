@@ -29,7 +29,7 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .calbox{touch-action:pan-y}.cell{cursor:pointer}.cell.sel{outline:2px solid var(--pri)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:1px;background:var(--mut)}.dot.k1{background:var(--k1)}.dot.k2{background:var(--k2)}.dot.k3{background:var(--k3)}.dot.k4{background:var(--k4)}.dot.k5{background:var(--k5)}.dot.x{opacity:.35}
 .ag b{display:block;margin-top:10px}.agi{display:flex;gap:8px;align-items:center;width:100%;text-align:left;margin-top:6px;padding:10px 12px;font-size:15px}
-.cell.hp{background:var(--hp)}.cell.hy{background:var(--hy)}.cell.hp b{color:var(--hpt)}.ag b.hp{color:var(--hpt)}.ag b.hy{background:var(--hy);padding:0 6px;border-radius:4px}
+.cell.hp{background:var(--hp)}.cell.hy{background:var(--hy)}.cell.hp b{color:var(--hpt)}.cell.today b{background:var(--pri);color:var(--on);border-radius:99px;padding:0 6px;font-weight:600}.ag b.hp{color:var(--hpt)}.ag b.hy{background:var(--hy);padding:0 6px;border-radius:4px}
 .lg{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;border:1px solid var(--bd)}.lg.hp{background:var(--hp)}.lg.hy{background:var(--hy)}
 .sum{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}.sum td,.sum th{border-bottom:1px solid var(--bd);padding:6px 4px;vertical-align:top;text-align:left}.sum .g{background:var(--bg);color:var(--mut);font-size:12px}
 .swt{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;color:var(--mut)}.swt.on{color:var(--tx)}.swt .trk{width:34px;height:20px;border-radius:99px;background:var(--bd);position:relative;flex:none;transition:.15s}.swt .trk i{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}.swt.on .trk{background:var(--c)}.swt.on .trk i{left:16px}
@@ -55,9 +55,16 @@ function load0(){try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
 const uid=()=>"i"+Math.random().toString(36).slice(2,10);
 // ===== 狀態 =====
-let me=null,year=null,view="cal",month=new Date().getMonth();
+let me=null,year=null,view="cal",month=new Date().getMonth(),yearAuto=true;
+function pickYear(){if(!yearAuto||!db||!db.years.length)return;const cy=new Date().getFullYear(),ys=db.years.slice().sort(),wc=ys.filter(y=>db.courses.some(c=>c.year==y)),pool=wc.length?wc:ys;year=pool.includes(cy)?cy:(pool.find(v=>v>cy)||pool[pool.length-1])}
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let catOn=loadCats(),zoom=innerWidth<600?0:1,selDay=null;const onDay=(cs,ds)=>cs.filter(c=>c.date<=ds&&(c.endDate||c.date)>=ds);
+let catOn=loadCats(),zoom=innerWidth<600?0:1,selDay=null;const zs=c=>(c.zones||[]).map(z=>z.replace("區","")).join("／")||"未定",
+onDay=(cs,ds)=>{const l=cs.filter(c=>c.date<=ds&&(c.endDate||c.date)>=ds),used=new Set(),out=[];
+ l.forEach(a=>{if(used.has(a.id))return;
+  const b=a.category=="了愿"&&a.status!="cancelled"&&a.date<ds&&(a.endDate||a.date)==ds?l.find(x=>x!==a&&x.category=="了愿"&&x.status!="cancelled"&&x.title==a.title&&x.date==ds):null;
+  if(b){used.add(a.id);used.add(b.id);const t=b.start||a.end||"";out.push({id:"m:"+a.id+":"+b.id,title:a.title,category:"了愿",date:ds,endDate:"",status:"active",roles:[],_m:1,_ml:zs(a)+"▸"+zs(b)+(t?" "+t:"")})}
+  else if(!l.some(y=>y!==a&&y.category=="了愿"&&a.category=="了愿"&&y.status!="cancelled"&&a.status!="cancelled"&&y.title==a.title&&y.date<ds&&(y.endDate||y.date)==ds&&a.date==ds&&!used.has(y.id)))out.push(a)});
+ return out};
 const isMulti=c=>c.endDate&&c.endDate!=c.date,md=d=>+d.slice(5,7)+"/"+ +d.slice(8),
 dayList=c=>{const r=[];for(let t=Date.parse(c.date+"T00:00:00Z"),e=Date.parse((c.endDate||c.date)+"T00:00:00Z");t<=e;t+=864e5)r.push(new Date(t).toISOString().slice(0,10));return r},
 sdays=(s,c)=>s.days&&s.days.length?s.days:dayList(c),
@@ -67,7 +74,7 @@ isLead=r=>LEADERS.includes(r.name),mc=d=>{const m=(db.marks||{})[d];return m=="p
 stdCap=()=>Object.assign({"總務組組員":5,"文書組組員":5,"烹飪組組員":5,"交通組組員":5,"視聽組組員":5,"班員":300},db.std||{}),
 stdRoles=cat=>cat=="了愿"?[{id:uid(),name:"班員",cap:stdCap()["班員"]}]:[...LEADERS.map(n=>({id:uid(),name:n,cap:1})),...MEMBERS.map(n=>({id:uid(),name:n,cap:stdCap()[n]}))],
 roleRow=r=>`<div class="row rr" data-id="${r.id}"><select class="rn" style="flex:2">${[...MEMBERS,...(r.name&&!MEMBERS.includes(r.name)?[r.name]:[])].map(n=>`<option ${n==r.name?"selected":""}>${esc(n)}</option>`).join("")}</select><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`,
-readRoles=()=>[...[...document.querySelectorAll("#leads input:checked")].map(i=>({id:i.dataset.id,name:i.value,cap:1})),...[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name)];const CATS=["總壇","分壇","禪修","了愿"],ZONES=["天真區","天善區","天美區","天志區","天孝區"],zt=c=>c.zones&&c.zones.length?"・"+c.zones.map(z=>z.replace("區","")).join("／"):"",zopts=(z,i)=>{const v=(z||[])[i];return `<option value="">（未選）</option>`+[...ZONES,...(v&&!ZONES.includes(v)?[v]:[])].map(n=>`<option ${v==n?"selected":""}>${esc(n)}</option>`).join("")},kc=c=>c.category=="個人"?5:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
+readRoles=()=>[...[...document.querySelectorAll("#leads input:checked")].map(i=>({id:i.dataset.id,name:i.value,cap:1})),...[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name)];const CATS=["總壇","分壇","禪修","了愿"],ZONES=["天真區","天善區","天美區","天志區","天孝區"],zt=c=>c._m?"・"+c._ml:c.zones&&c.zones.length?"・"+c.zones.map(z=>z.replace("區","")).join("／"):"",zopts=(z,i)=>{const v=(z||[])[i];return `<option value="">（未選）</option>`+[...ZONES,...(v&&!ZONES.includes(v)?[v]:[])].map(n=>`<option ${v==n?"selected":""}>${esc(n)}</option>`).join("")},kc=c=>c.category=="個人"?5:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
 filt=()=>`<div class="row" style="margin-bottom:10px">${[...CATS,"個人"].map((k,i)=>{const on=catOn[k]!==false;return `<button class="swt ${on?"on":""}" role="switch" aria-checked="${on}" data-a="cat" data-k="${k}" style="--c:var(--k${i+1})"><span class="trk"><i></i></span>${k}</button>`}).join("")}${[...CATS,"個人"].every(k=>catOn[k]===false)?'<span class="mut">類別都已關閉</span>':""}<span class="sp"></span><button data-a="pe" data-id="">＋ 個人行程</button><button data-a="pebk">備份／還原</button></div>`;
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
@@ -82,9 +89,9 @@ async function startFirebase(){
  const app=A.initializeApp(CONFIG),fs=S.getFirestore(app);const uc=await Au.signInAnonymously(Au.getAuth(app));
  F={fs,S,uid:uc.user.uid,lv:0};try{const sn=await S.getDoc(S.doc(fs,"claims",F.uid));if(sn.exists())F.lv={super:2,manager:1}[sn.data().level]||0}catch(e){}db={years:[],courses:[],signups:[]};
  const on=(n,f)=>S.onSnapshot(S.collection(fs,n),q=>{f(q.docs.map(d=>({...d.data(),id:d.id})));if(me)refresh()},e=>alert("讀取失敗："+e.message));
- on("courses",a=>db.courses=a);on("signups",a=>db.signups=a);
+ on("courses",a=>{db.courses=a;pickYear()});on("signups",a=>db.signups=a);
  on("years",a=>{db.years=a.map(x=>+x.id);db.marks={};a.forEach(x=>{Object.assign(db.marks,x.marks||{});if(x.std)db.std=x.std});const y=new Date().getFullYear();
-  if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else if(year==null||!db.years.includes(year))year=Math.max(...db.years)})}
+  if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else{if(year==null||!db.years.includes(year))year=Math.max(...db.years);pickYear()}})}
 const api={
  async sign(c,r,dd,nm){const who=(nm||me.name).trim(),dy=isMulti(c)&&dd&&dd.length?{days:dd}:{};
   if(isLead(r)&&!nm)throw Error("此職司由後台指派，請洽管理者");
@@ -143,6 +150,9 @@ async function doImport(){let a;try{a=JSON.parse($("#imt").value)}catch(e){throw
  document.querySelectorAll(".mask").forEach(m=>m.remove());const sk=a.length-list.length-upd.length;alert(`新增 ${list.length} 堂課程`+(upd.length?`，更新 ${upd.length} 堂（分類或職司）`:"")+(mn?`，標示 ${mn} 個日期`:"")+(sk>0?`，略過 ${sk} 筆（已完整或格式不符）`:""))}
 function loadCats(){try{return JSON.parse(localStorage.getItem("acms_cats"))||{}}catch(e){return{}}}
 function saveCats(){try{localStorage.setItem("acms_cats",JSON.stringify(catOn))}catch(e){}}
+function mergeOpen(id){const[,x,y]=id.split(":"),a=db.courses.find(c=>c.id==x),b=db.courses.find(c=>c.id==y);if(!a||!b)return;document.querySelectorAll(".mask").forEach(m=>m.remove());
+ const tm=b.start||a.end||"",ln=(c,t)=>`<button class="agi" data-a="open" data-id="${c.id}"><span class="dot k4"></span><span>${esc(c.title)}${zt(c)}<br><span class="mut">${t}</span></span></button>`;
+ modal(`<h2>${esc(a.title)}　交班</h2><div class="mut">${md(b.date)}${tm?" "+tm:""} 交班</div>${ln(a,"交班前："+md(a.date)+"～"+md(b.date)+(tm?" "+tm:""))}${ln(b,"交班後："+md(b.date)+(tm?" "+tm:"")+"～"+md(b.endDate||b.date))}<div class="row" style="margin-top:8px"><span class="sp"></span><button data-a="close">關閉</button></div>`)}
 const peKey=()=>"acms_pe_"+nk(me.name);
 function peRaw(){try{return JSON.parse(localStorage.getItem(peKey()))||[]}catch(e){return[]}}
 function peSave(a){try{localStorage.setItem(peKey(),JSON.stringify(a))}catch(e){alert("無法儲存：瀏覽器不允許儲存資料（可能是無痕模式）")}}
@@ -160,7 +170,7 @@ function admin(){const cs=yc(),rows=[];
  <div class="card"><h2>密碼設定</h2><p class="mut">留空表示不修改。變更後，其他裝置上的管理者需要重新輸入密碼。</p><label>一般管理者密碼</label><input id="pw1" type="password" autocomplete="new-password"><label>後台管理者密碼</label><input id="pw2" type="password" autocomplete="new-password"><p><button class="p" data-a="setpw">儲存密碼</button></p></div>
  <div class="card"><h2>新增報名（代人報名）</h2><label>課程</label><select id="bc">${cs.map(c=>`<option value="${c.id}">${md(c.date)} ${esc(c.title)}</option>`).join("")}</select><label>職司</label><select id="br"></select><label>姓名</label><input id="bn" maxlength="20"><p><button class="p" data-a="adminadd">新增</button></p></div>
  <div class="card"><h2>${year} 年度報名名單（${rows.length} 筆）</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th align="left">日期</th><th align="left">課程</th><th align="left">職司</th><th align="left">姓名</th><th></th></tr>${rows.join("")}</table></div></div>`}
-async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();year=db.years.slice().sort().pop()}
+async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();pickYear()}
  let nm=null;try{nm=localStorage.getItem("acms_name")}catch(e){}
  if(nm){let lv=0;if(F)lv=F.lv;else try{lv=+localStorage.getItem("acms_lv")||0}catch(e){}me={name:nm,lv}}
  render()}
@@ -177,14 +187,14 @@ function render(){
  <span class="tabs row">${[["cal","行事曆"],["list","課程列表"],["mine","我的報名"],...(me.lv==2?[["admin","後台"]]:[])].map(([k,t])=>`<button data-a="view" data-v="${k}" class="${view==k?"on":""}">${t}</button>`).join("")}</span>
  ${me.lv==2?`<button class="p" data-a="edit" data-id="">＋ 新增課程</button>`:""}${me.lv>=1?`<button data-a="export">匯出報名</button>`:""}${me.lv==2?`<button data-a="import">匯入課程</button>`:""}</div>
  ${view=="cal"||view=="list"?filt():""}${view=="cal"?cal(cs):view=="list"?list(cs):view=="admin"&&me.lv==2?admin():mine()}`;if(view=="admin"&&me.lv==2)fillRoles()}
-function cal(cs){const f=new Date(year,month,1),n=new Date(year,month+1,0).getDate(),p=n=>String(n).padStart(2,"0"),ds=d=>`${year}-${p(month+1)}-${p(d)}`;
- const nav=`<div class="row"><button data-a="mo" data-d="-1" ${month==0?"disabled":""}>‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1" ${month==11?"disabled":""}>›</button><span class="sp"></span><button data-a="zm" data-d="-1" ${zoom==0?"disabled":""}>－</button><button data-a="zm" data-d="1" ${zoom==2?"disabled":""}>＋</button></div>`;
+function cal(cs){const ts=new Date().toLocaleDateString("sv-SE"),f=new Date(year,month,1),n=new Date(year,month+1,0).getDate(),p=n=>String(n).padStart(2,"0"),ds=d=>`${year}-${p(month+1)}-${p(d)}`;
+ const nav=`<div class="row"><button data-a="mo" data-d="-1" ${month==0?"disabled":""}>‹</button><h2 style="margin:0">${year} 年 ${month+1} 月</h2><button data-a="mo" data-d="1" ${month==11?"disabled":""}>›</button><button data-a="today">今天</button><span class="sp"></span><button data-a="zm" data-d="-1" ${zoom==0?"disabled":""}>－</button><button data-a="zm" data-d="1" ${zoom==2?"disabled":""}>＋</button></div>`;
  const item=c=>`<button class="agi" data-a="open" data-id="${c.id}"><span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>${esc(c.title)}${zt(c)}${c.status=="cancelled"?" （已取消）":""}</button>`;
  let body="";
  if(zoom==2){for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));if(l.length)body+=`<div class="ag"><b class="${mc(ds(d))}">${month+1}/${d}（${"日一二三四五六"[new Date(year,month,d).getDay()]}）</b>${l.map(item).join("")}</div>`}
   body=body||'<p class="mut">本月沒有課程。</p>'}
  else{let h="";for(let i=0;i<f.getDay();i++)h+=`<div></div>`;
-  for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));h+=`<div class="cell ${selDay==ds(d)?"sel":""} ${mc(ds(d))}" data-a="day" data-d="${ds(d)}"><b>${d}</b>${zoom==0?`<div>${l.map(c=>`<span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>`).join("")}</div>`:l.map(c=>`<button class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}${zt(c)}</button>`).join("")}</div>`}
+  for(let d=1;d<=n;d++){const l=onDay(cs,ds(d));h+=`<div class="cell ${selDay==ds(d)?"sel":""} ${mc(ds(d))} ${ds(d)==ts?"today":""}" data-a="day" data-d="${ds(d)}"><b>${d}</b>${zoom==0?`<div>${l.map(c=>`<span class="dot k${kc(c)} ${c.status=="cancelled"?"x":""}"></span>`).join("")}</div>`:l.map(c=>`<button class="chip k${kc(c)} ${c.status=="cancelled"?"x":""}" data-a="open" data-id="${c.id}">${esc(c.title)}${zt(c)}</button>`).join("")}</div>`}
   body=`<div class="grid" style="margin-top:8px">${"日一二三四五六".split("").map(x=>`<div class="dh">${x}</div>`).join("")}${h}</div>`;
   if(selDay&&selDay.startsWith(year+"-"+p(month+1))){const l=onDay(cs,selDay);body+=`<div style="margin-top:8px"><b>${+selDay.slice(8)} 日</b>${l.length?l.map(item).join(""):' <span class="mut">當天沒有課程</span>'}</div>`}}
  return `<div class="card calbox">${nav}${body}<div class="mut" style="margin-top:8px"><span class="lg hp"></span> 例假日　<span class="lg hy"></span> 宏天操持　｜　雙指縮放或按 ＋／－ 切換：圓點、標籤、列表</div></div>`}
@@ -233,12 +243,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
    me={name:n,lv};try{localStorage.setItem("acms_name",n);if(!F)localStorage.setItem("acms_lv",lv)}catch(e){}render()})()}
  else if(a=="logout"){(async()=>{try{localStorage.removeItem("acms_name");localStorage.removeItem("acms_lv")}catch(e){}
   if(F){try{await F.S.deleteDoc(F.S.doc(F.fs,"claims",F.uid))}catch(e){}F.lv=0}me=null;if(view=="admin")view="cal";render()})()}else if(a=="view"){view=b.dataset.v;render()}
- else if(a=="mo"){month+=+b.dataset.d;selDay=null;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else detail(id)}
+ else if(a=="mo"){month+=+b.dataset.d;selDay=null;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else if(id.startsWith("m:"))mergeOpen(id);else detail(id)}
  else if(a=="close")b.closest(".mask").remove()
  else if(a=="sign"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(isMulti(c)&&!dd.length)return alert("請至少勾選一天");run(()=>api.sign(c,c.roles.find(x=>x.id==(b.dataset.r||($("#sr")||{}).value)),dd))}
  else if(a=="setdays"){const c=db.courses.find(x=>x.id==id),dd=[...document.querySelectorAll("#dp input:checked")].map(i=>i.value);if(!dd.length)return alert("請至少勾選一天");run(()=>api.setDays(c,dd))}
  else if(a=="unsign"){if(mySign(id)&&confirm("確定取消報名？")){const c=db.courses.find(x=>x.id==id);run(()=>api.unsign(c))}}
- else if(a=="newyear"){const y=+prompt("新增年度（西元年）",year+1);if(y>1999&&y<2100&&!db.years.includes(y)){year=y;month=0;run(()=>api.addYear(y))}}
+ else if(a=="newyear"){const y=+prompt("新增年度（西元年）",year+1);if(y>1999&&y<2100&&!db.years.includes(y)){year=y;month=0;yearAuto=false;run(()=>api.addYear(y))}}
  else if(a=="edit"){document.querySelectorAll(".mask").forEach(m=>m.remove());editor(id,b.dataset.m=="1")}
  else if(a=="addrole"){const used=[...document.querySelectorAll(".rr .rn")].map(x=>x.value);$("#roles").insertAdjacentHTML("beforeend",roleRow({id:uid(),name:MEMBERS.find(n=>!used.includes(n))||MEMBERS[0],cap:1}))}
  else if(a=="rmrole"){const r=b.closest(".rr");if(taken(r.dataset.id)&&!confirm("此職司已有人報名，刪除會一併移除其報名紀錄，確定？"))return;r.remove()}
@@ -265,6 +275,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="pebk")peBackup()
  else if(a=="pecopy"){const t=$("#pet");t.select();try{document.execCommand("copy")}catch(e){}}
  else if(a=="perestore"){let x;try{x=JSON.parse($("#pet").value)}catch(e){return alert("內容不是有效的備份")}if(!Array.isArray(x))return alert("內容不是有效的備份");const cur=peRaw(),ids=new Set(cur.map(e=>e.id)),add=x.filter(e=>e&&e.title&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&!ids.has(e.id)).map(e=>({id:e.id||uid(),title:String(e.title),date:e.date,start:e.start||"",end:e.end||"",note:e.note||""}));peSave(cur.concat(add));document.querySelectorAll(".mask").forEach(m=>m.remove());alert(`已還原 ${add.length} 筆個人行程`);render()}
+ else if(a=="today"){yearAuto=true;pickYear();month=new Date().getMonth();selDay=null;render()}
  else if(a=="day"){selDay=selDay==b.dataset.d?null:b.dataset.d;render()}
  else if(a=="zm"){zoom=Math.max(0,Math.min(2,zoom+ +b.dataset.d));render()}
  else if(a=="cat"){catOn[b.dataset.k]=catOn[b.dataset.k]===false;saveCats();render()}
@@ -272,7 +283,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="copy"){const t=$("#csv");t.select();try{document.execCommand("copy")}catch(x){}}
  else if(a=="about")modal(`<h2>架構說明（第一階段）</h2><p class="mut">前端：單頁應用，所有資料存取集中於資料層（Adapter）。目前為 localStorage 示範實作；填入 Firebase 設定後改用 Firestore 並多人即時同步。集合：years、courses（職司內嵌）、signups（見 firestore.rules）。</p>
  <p class="mut"><b>已完成：</b>登入流程、年度切換、行事曆／列表、報名／取消、名額與單選規則、管理者課程與職司維護、CSV 匯出。<br><b>尚未完成：</b>個人驗證碼、規則層級的額滿鎖定（目前由前端交易保證）。</p><button data-a="close">關閉</button>`)});
-document.addEventListener("change",e=>{if(e.target.id=="yr"){year=+e.target.value;month=0;selDay=null;render()}else if(e.target.id=="bc")fillRoles();else if(e.target.id=="f_c"){const li=e.target.value=="了愿";$("#zn").style.display=li?"":"none";$("#leadbox").style.display=li?"none":"";if(li){document.querySelectorAll("#leads input").forEach(i=>i.checked=false);document.querySelectorAll(".rr").forEach(r=>{if(r.querySelector(".rn").value!="班員"&&!taken(r.dataset.id))r.remove()});if(!document.querySelector(".rr"))$("#roles").insertAdjacentHTML("beforeend",roleRow({id:uid(),name:"班員",cap:stdCap()["班員"]}))}}else if(e.target.closest("#leads")&&!e.target.checked&&taken(e.target.dataset.id)&&!confirm("此職司已有指派人員，取消勾選並儲存後會一併移除，確定嗎？"))e.target.checked=true});
+document.addEventListener("change",e=>{if(e.target.id=="yr"){year=+e.target.value;month=0;selDay=null;yearAuto=false;render()}else if(e.target.id=="bc")fillRoles();else if(e.target.id=="f_c"){const li=e.target.value=="了愿";$("#zn").style.display=li?"":"none";$("#leadbox").style.display=li?"none":"";if(li){document.querySelectorAll("#leads input").forEach(i=>i.checked=false);document.querySelectorAll(".rr").forEach(r=>{if(r.querySelector(".rn").value!="班員"&&!taken(r.dataset.id))r.remove()});if(!document.querySelector(".rr"))$("#roles").insertAdjacentHTML("beforeend",roleRow({id:uid(),name:"班員",cap:stdCap()["班員"]}))}}else if(e.target.closest("#leads")&&!e.target.checked&&taken(e.target.dataset.id)&&!confirm("此職司已有指派人員，取消勾選並儲存後會一併移除，確定嗎？"))e.target.checked=true});
 const drafts={};document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.ri)drafts[e.target.dataset.ri]=e.target.value});
 document.addEventListener("keydown",e=>{if(e.key=="Enter"&&(e.target.id=="nm"||e.target.id=="pw")){const l=document.querySelector("[data-a=login]");if(l)l.click()}});
 let pd=0,pz=false;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
