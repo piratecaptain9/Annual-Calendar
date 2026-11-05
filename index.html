@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>年度課程暨勤務管理系統 V1.0</title>
 <style>
-:root{--bg:#f5f6f8;--k1:#c0392b;--k2:#2f5fd0;--k3:#1f8a4c;--k5:#8e44ad;--k4:#f4a340;--k4t:#b9650b;--hp:#fde0ef;--hy:#fff4bd;--hpt:#c2185b;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
+:root{--bg:#f5f6f8;--k1:#c0392b;--k2:#2f5fd0;--k3:#1f8a4c;--k5:#8e44ad;--k4:#e67e22;--k4t:#b9650b;--hp:#fde0ef;--hy:#fff4bd;--hpt:#c2185b;--card:#fff;--tx:#1d2330;--mut:#6b7385;--pri:#2f5fd0;--on:#fff;--bd:#dde1e8;--ok:#1f8a4c;--bad:#c23b3b;--warn:#fff4d6;--warnt:#7a5a00;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k5:#c08ae8;--k4:#f0a35e;--k4t:#f0a35e;--hp:#4d2a3d;--hy:#4a4420;--hpt:#f48fb1;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
-:root[data-theme=dark]{--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k5:#c08ae8;--k4:#f0a35e;--k4t:#f0a35e;--hp:#4d2a3d;--hy:#4a4420;--hpt:#f48fb1;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k5:#c08ae8;--k4:#e8892f;--k4t:#f0a35e;--hp:#4d2a3d;--hy:#4a4420;--hpt:#f48fb1;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}}
+:root[data-theme=dark]{--bg:#14171d;--k1:#e8736a;--k2:#8aa8f5;--k3:#4cc380;--k5:#c08ae8;--k4:#e8892f;--k4t:#f0a35e;--hp:#4d2a3d;--hy:#4a4420;--hpt:#f48fb1;--card:#1d222b;--tx:#e8ebf1;--mut:#9aa3b5;--pri:#6f93f0;--on:#10141c;--bd:#2f3644;--ok:#4cc380;--bad:#ef7676;--warn:#3a2f10;--warnt:#f0cf7a}
 *{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:12px}
 .banner{background:var(--warn);color:var(--warnt);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
@@ -24,7 +24,7 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .cell{min-height:64px;background:var(--bg);border-radius:6px;padding:3px;font-size:12px;overflow:hidden}
 .cell b{color:var(--mut);font-weight:400}
 .chip{display:block;width:100%;text-align:left;margin-top:2px;padding:1px 4px;font-size:11px;border-radius:4px;background:var(--pri);color:var(--on);border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}.chip.k4{background:var(--k4);color:#3d2400}.chip.k5{background:var(--k5)}
+.chip.k1{background:var(--k1)}.chip.k2{background:var(--k2)}.chip.k3{background:var(--k3)}.chip.k4{background:var(--k4);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.4)}.chip.k5{background:var(--k5)}
 .tag.k1{color:var(--k1);border-color:var(--k1)}.tag.k2{color:var(--k2);border-color:var(--k2)}.tag.k3{color:var(--k3);border-color:var(--k3)}.tag.k4{color:var(--k4t);border-color:var(--k4)}.tag.k5{color:var(--k5);border-color:var(--k5)}
 .calbox{touch-action:pan-y}.cell{cursor:pointer}.cell.sel{outline:2px solid var(--pri)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:1px;background:var(--mut)}.dot.k1{background:var(--k1)}.dot.k2{background:var(--k2)}.dot.k3{background:var(--k3)}.dot.k4{background:var(--k4)}.dot.k5{background:var(--k5)}.dot.x{opacity:.35}
