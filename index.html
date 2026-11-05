@@ -293,9 +293,20 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
 document.addEventListener("change",e=>{if(e.target.id=="yr"){year=+e.target.value;month=0;selDay=null;yearAuto=false;render()}else if(e.target.id=="bc")fillRoles();else if(e.target.id=="f_c"){const li=e.target.value=="了愿";$("#zn").style.display=li?"":"none";$("#leadbox").style.display=li?"none":"";if(li){document.querySelectorAll("#leads input").forEach(i=>i.checked=false);document.querySelectorAll(".rr").forEach(r=>{if(r.querySelector(".rn").value!="班員"&&!taken(r.dataset.id))r.remove()});if(!document.querySelector(".rr"))$("#roles").insertAdjacentHTML("beforeend",roleRow({id:uid(),name:"班員",cap:stdCap()["班員"]}))}}else if(e.target.closest("#leads")&&!e.target.checked&&taken(e.target.dataset.id)&&!confirm("此職司已有指派人員，取消勾選並儲存後會一併移除，確定嗎？"))e.target.checked=true});
 const drafts={};document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.ri)drafts[e.target.dataset.ri]=e.target.value});
 document.addEventListener("keydown",e=>{if(e.key=="Enter"&&(e.target.id=="nm"||e.target.id=="pw")){const l=document.querySelector("[data-a=login]");if(l)l.click()}});
-let pd=0,pz=false;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-document.addEventListener("touchstart",e=>{if(e.touches.length==2&&e.target.closest(".calbox")){pd=dist(e.touches);pz=false}},{passive:true});
-document.addEventListener("touchmove",e=>{if(e.touches.length==2&&pd&&!pz&&e.target.closest(".calbox")){const r=dist(e.touches)/pd;if(r>1.3||r<.75){zoom=Math.max(0,Math.min(2,zoom+(r>1?1:-1)));pz=true;render()}}},{passive:true});
-document.addEventListener("touchend",e=>{if(e.touches.length<2){pd=0;pz=false}},{passive:true});
+let gz=false,pd=0,base=0;const tp=new Map();
+function toast(t){let e=document.getElementById("toast");if(!e){e=document.createElement("div");e.id="toast";e.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fff;padding:8px 18px;border-radius:99px;font-size:15px;z-index:20;pointer-events:none";document.body.appendChild(e)}e.textContent=t;e.style.display="block";clearTimeout(e._t);e._t=setTimeout(()=>{e.style.display="none"},1200)}
+function zstep(dir){const z=Math.max(0,Math.min(2,zoom+dir));if(z===zoom)return;zoom=z;render();toast("顯示方式："+["圓點","標籤","列表"][z])}
+const tdist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY),pdist=()=>{const a=[...tp.values()];return a.length>1?Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y):0};
+// 雙指縮放：同時支援 Pointer Events 與 Touch Events，兩者共用 gz，一次手勢只切換一階
+document.addEventListener("pointerdown",e=>{if(e.pointerType!="touch")return;if(e.isPrimary){tp.clear();gz=false;base=0}
+ if(!e.target.closest(".calbox")){tp.clear();return}tp.set(e.pointerId,{x:e.clientX,y:e.clientY});if(tp.size==2){base=pdist();gz=false}});
+document.addEventListener("pointermove",e=>{if(!tp.has(e.pointerId))return;tp.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(tp.size==2&&base&&!gz){const r=pdist()/base;if(r>1.2||r<.83){gz=true;zstep(r>1?1:-1)}}});
+const pu=e=>{tp.delete(e.pointerId);if(tp.size<2){base=0;gz=false}};document.addEventListener("pointerup",pu);document.addEventListener("pointercancel",pu);
+document.addEventListener("touchstart",e=>{if(e.touches.length==1){gz=false;pd=0}if(e.touches.length==2&&e.target.closest&&e.target.closest(".calbox")){pd=tdist(e.touches);gz=false}},{passive:true});
+document.addEventListener("touchmove",e=>{if(e.touches.length==2&&pd&&!gz&&e.target.closest&&e.target.closest(".calbox")){const r=tdist(e.touches)/pd;if(r>1.2||r<.83){gz=true;zstep(r>1?1:-1)}}},{passive:true});
+document.addEventListener("touchend",e=>{if(e.touches.length<2){pd=0;gz=false}},{passive:true});
+// 電腦觸控板雙指（Ctrl＋滾輪）
+let wt=0;document.addEventListener("wheel",e=>{if(e.ctrlKey&&e.target.closest&&e.target.closest(".calbox")){e.preventDefault();const n=Date.now();if(n-wt>350){wt=n;zstep(e.deltaY<0?1:-1)}}},{passive:false});
 init();
 </script></body></html>
