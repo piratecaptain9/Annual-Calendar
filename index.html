@@ -41,6 +41,8 @@ input,select{background:var(--bg);border:1px solid var(--bd);border-radius:8px;p
 .seg{display:flex;gap:4px}.seg button{padding:5px 9px;font-size:13px}
 @media(max-width:420px){.vt button{padding:8px 6px;font-size:13.5px}}
 @media(max-width:380px){.vt button{padding:7px 4px;font-size:13px}.yrsel{font-size:17px;padding:6px 8px}.yl{font-size:14px}}
+.sum td:first-child,.sum th:first-child{white-space:nowrap}
+.zt{width:100%;border-collapse:collapse;font-size:13px}.zt td,.zt th{border-bottom:1px dashed var(--bd);padding:4px 3px;vertical-align:top;text-align:left}.zt th{color:var(--mut);font-weight:500;font-size:12px}.zt tr:last-child td{border-bottom:0}
 .cnt{white-space:nowrap;text-align:right;color:var(--mut);font-size:13px}.ins{padding:2px 0 8px}.ins+.ins{border-top:1px dashed var(--bd);padding-top:6px}
 .chip.x{background:var(--mut);text-decoration:line-through}
 .mut{color:var(--mut);font-size:13px}.tag{font-size:12px;border-radius:99px;padding:1px 8px;border:1px solid var(--bd);color:var(--mut)}
@@ -64,7 +66,7 @@ function load0(){try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
 const uid=()=>"i"+Math.random().toString(36).slice(2,10);
 // ===== 狀態 =====
-let me=null,year=null,view="cal",month=new Date().getMonth(),yearAuto=true;
+let me=null,loginPref={},year=null,view="cal",month=new Date().getMonth(),yearAuto=true;
 function pickYear(){if(!yearAuto||!db||!db.years.length)return;const cy=new Date().getFullYear(),ys=db.years.slice().sort(),wc=ys.filter(y=>db.courses.some(c=>c.year==y)),pool=wc.length?wc:ys;year=pool.includes(cy)?cy:(pool.find(v=>v>cy)||pool[pool.length-1])}
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let catOn=loadCats(),zoom=innerWidth<600?0:1,selDay=null;const insTime=s=>s.ts||s.te?(s.ts||"")+"–"+(s.te||""):"",insName=c=>c.instructor||db.signups.filter(s=>c.roles.some(r=>r.id==s.roleId&&r.name=="講師")).map(s=>s.name).join("、");
@@ -84,14 +86,18 @@ isLead=r=>LEADERS.includes(r.name),mc=d=>{const m=(db.marks||{})[d];return m=="p
 stdCap=()=>Object.assign({"總務組組員":5,"文書組組員":5,"烹飪組組員":5,"交通組組員":5,"視聽組組員":5,"班員":300},db.std||{}),
 stdRoles=cat=>cat=="了愿"?[{id:uid(),name:"班員",cap:stdCap()["班員"]}]:[...LEADERS.map(n=>({id:uid(),name:n,cap:1})),...MEMBERS.map(n=>({id:uid(),name:n,cap:stdCap()[n]}))],
 roleRow=r=>`<div class="row rr" data-id="${r.id}"><select class="rn" style="flex:2">${[...MEMBERS,...(r.name&&!MEMBERS.includes(r.name)?[r.name]:[])].map(n=>`<option ${n==r.name?"selected":""}>${esc(n)}</option>`).join("")}</select><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`,
-readRoles=()=>[...[...document.querySelectorAll("#leads input:checked")].map(i=>({id:i.dataset.id,name:i.value,cap:1})),...[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name)];const CATS=["總壇","分壇","禪修","了愿"],ZONES=["天真區","天善區","天美區","天志區","天孝區"],zt=c=>c._m?"・"+c._ml:c.zones&&c.zones.length?"・"+c.zones.map(z=>z.replace("區","")).join("／"):"",zopts=(z,i)=>{const v=(z||[])[i];return `<option value="">（未選）</option>`+[...ZONES,...(v&&!ZONES.includes(v)?[v]:[])].map(n=>`<option ${v==n?"selected":""}>${esc(n)}</option>`).join("")},kc=c=>c.category=="個人"?5:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
+readRoles=()=>[...[...document.querySelectorAll("#leads input:checked")].map(i=>({id:i.dataset.id,name:i.value,cap:1})),...[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name)];const CATS=["總壇","分壇","禪修","了愿"],ZONES=["天真區","天善區","天美區","天志區","天孝區","天仁區"],SEX=["乾","坤"],zt=c=>c._m?"・"+c._ml:c.zones&&c.zones.length?"・"+c.zones.map(z=>z.replace("區","")).join("／"):"",zopts=(z,i)=>{const v=(z||[])[i];return `<option value="">（未選）</option>`+[...ZONES,...(v&&!ZONES.includes(v)?[v]:[])].map(n=>`<option ${v==n?"selected":""}>${esc(n)}</option>`).join("")},kc=c=>c.category=="個人"?5:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
 filt=()=>`<div class="row" style="margin-bottom:10px">${[...CATS,"個人"].map((k,i)=>{const on=catOn[k]!==false;return `<button class="swt ${on?"on":""}" role="switch" aria-checked="${on}" data-a="cat" data-k="${k}" style="--c:var(--k${i+1})"><span class="trk"><i></i></span>${k}</button>`}).join("")}${[...CATS,"個人"].every(k=>catOn[k]===false)?'<span class="mut">類別都已關閉</span>':""}<span class="sp"></span><button class="sm" data-a="pe" data-id="">＋ 個人行程</button><button class="sm" data-a="pebk">備份／還原</button></div>`;
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
 const inYear=c=>c.year==year||(c.date<=year+"-12-31"&&(c.endDate||c.date)>=year+"-01-01"),yc=()=>db.courses.filter(inYear).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
 const fmt=c=>`${c.date}${c.endDate&&c.endDate!=c.date?"～"+c.endDate:""} ${c.start||""}${c.end?"–"+c.end:""}`;
 const nk=n=>String(n).trim().toLowerCase(),sid=cid=>cid+"__"+encodeURIComponent(nk(me.name));
-function refresh(){const m=document.querySelector("[data-det]"),i=m&&m.dataset.det,sr=$("#sr")&&$("#sr").value,dp=[...document.querySelectorAll("#dp input")].map(x=>[x.value,x.checked]);render();
+const bfTried=new Set();
+function backfill(){if(!me||!me.zone||!me.sex)return;const l=db.signups.filter(s=>nk(s.name)==nk(me.name)&&(!s.zone||!s.sex)&&!bfTried.has(s.id));if(!l.length)return;l.forEach(s=>bfTried.add(s.id));
+ if(!F){l.forEach(s=>{s.zone=me.zone;s.sex=me.sex});return save()}
+ const{fs,S}=F,b=S.writeBatch(fs);l.forEach(s=>b.update(S.doc(fs,"signups",s.id),{zone:me.zone,sex:me.sex}));b.commit().catch(()=>{})}
+function refresh(){backfill();const m=document.querySelector("[data-det]"),i=m&&m.dataset.det,sr=$("#sr")&&$("#sr").value,dp=[...document.querySelectorAll("#dp input")].map(x=>[x.value,x.checked]);render();
  if(i&&db.courses.some(c=>c.id==i)){detail(i);if(sr&&$("#sr")&&[...$("#sr").options].some(o=>o.value==sr))$("#sr").value=sr;dp.forEach(([v,c])=>{const e=document.querySelector(`#dp input[value="${v}"]`);if(e)e.checked=c})}}
 const run=async f=>{try{await f()}catch(e){alert(/permission/i.test(e.message||"")?"權限不足：管理密碼可能已變更，請登出後重新輸入密碼。":e.message||e)}refresh()};
 async function startFirebase(){
@@ -103,7 +109,7 @@ async function startFirebase(){
  on("years",a=>{db.years=a.map(x=>+x.id);db.marks={};a.forEach(x=>{Object.assign(db.marks,x.marks||{});if(x.std)db.std=x.std});const y=new Date().getFullYear();
   if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else{if(year==null)year=Math.max(...db.years);pickYear()}})}
 const api={
- async sign(c,r,dd,nm,meta){const who=(nm||me.name).trim(),dy={...(isMulti(c)&&dd&&dd.length?{days:dd}:{}),...(meta||{})};
+ async sign(c,r,dd,nm,meta){const who=(nm||me.name).trim(),dy={...(nm?{}:{zone:me.zone||"",sex:me.sex||""}),...(isMulti(c)&&dd&&dd.length?{days:dd}:{}),...(meta||{})};
   if(isLead(r)&&!nm)throw Error("此職司由後台指派，請洽管理者");
   if(db.signups.some(x=>x.courseId==c.id&&nk(x.name)==nk(who)))throw Error(nm?"此人已報名這堂課":"每堂課只能報名一種職司");
   if(!F){if(c.status!="active")throw Error("課程已取消");if(r.name!="講師"&&taken(r.id)>=r.cap)throw Error("此職司已額滿");db.signups.push({id:uid(),courseId:c.id,roleId:r.id,name:who,at:new Date().toISOString(),...dy});return save()}
@@ -164,6 +170,7 @@ function saveCats(){try{localStorage.setItem("acms_cats",JSON.stringify(catOn))}
 function mergeOpen(id){const[,x,y]=id.split(":"),a=db.courses.find(c=>c.id==x),b=db.courses.find(c=>c.id==y);if(!a||!b)return;document.querySelectorAll(".mask").forEach(m=>m.remove());
  const tm=b.start||a.end||"",ln=(c,t)=>`<button class="agi" data-a="open" data-id="${c.id}"><span class="dot k4"></span><span>${esc(c.title)}${zt(c)}<br><span class="mut">${t}</span></span></button>`;
  modal(`<h2>${esc(a.title)}　交班</h2><div class="mut">${md(b.date)}${tm?" "+tm:""} 交班</div>${ln(a,"交班前："+md(a.date)+"～"+md(b.date)+(tm?" "+tm:""))}${ln(b,"交班後："+md(b.date)+(tm?" "+tm:"")+"～"+md(b.endDate||b.date))}<div class="row" style="margin-top:8px"><span class="sp"></span><button data-a="close">關閉</button></div>`)}
+function memEdit(g){document.querySelectorAll(".mask").forEach(m=>m.remove());modal(`<h2>編輯：${esc(g.name)}</h2><div class="row" style="flex-wrap:nowrap"><div class="sp"><label>區別</label><select id="me_z"><option value="">請選擇</option>${ZONES.map(z=>`<option ${g.zone==z?"selected":""}>${z}</option>`).join("")}</select></div><div class="sp"><label>性別</label><select id="me_x"><option value="">請選擇</option>${SEX.map(x=>`<option ${g.sex==x?"selected":""}>${x}</option>`).join("")}</select></div></div><div class="row" style="margin-top:8px"><span class="sp"></span><button data-a="close">取消</button><button class="p" data-a="memsave" data-id="${g.id}">儲存</button></div>`)}
 function insEdit(g){document.querySelectorAll(".mask").forEach(m=>m.remove());modal(`<h2>編輯講師：${esc(g.name)}</h2><label>講題</label><input id="ie_t" value="${esc(g.topic||"")}"><div class="row"><div class="sp"><label>開始</label><input id="ie_s" type="time" value="${g.ts||""}"></div><div class="sp"><label>結束</label><input id="ie_e" type="time" value="${g.te||""}"></div></div><div class="row" style="margin-top:8px"><span class="sp"></span><button data-a="close">取消</button><button class="p" data-a="inssave" data-id="${g.id}">儲存</button></div>`)}
 const peKey=()=>"acms_pe_"+nk(me.name);
 function peRaw(){try{return JSON.parse(localStorage.getItem(peKey()))||[]}catch(e){return[]}}
@@ -176,7 +183,7 @@ async function claimLevel(pw){const{fs,S}=F,ref=S.doc(fs,"claims",F.uid);
  for(const[lv,n]of[["super",2],["manager",1]]){try{await S.setDoc(ref,{level:lv,k:pw});return n}catch(e){}}return 0}
 function fillRoles(){const c=db.courses.find(x=>x.id==($("#bc")||{}).value),e=$("#br");if(e)e.innerHTML=c?c.roles.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join(""):""}
 function admin(){const cs=yc(),rows=[];
- cs.forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>{const r=c.roles.find(x=>x.id==s.roleId)||{};rows.push(`<tr><td>${md(c.date)}</td><td>${esc(c.title)}</td><td>${esc(r.name||"")}</td><td>${esc(s.name)}${isMulti(c)?"（"+dtxt(s,c)+"）":""}</td><td><a data-a="rmsign" data-sid="${s.id}" style="cursor:pointer;color:var(--bad)">✕</a></td></tr>`)}));
+ cs.forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>{const r=c.roles.find(x=>x.id==s.roleId)||{};rows.push(`<tr><td>${md(c.date)}</td><td>${esc(c.title)}</td><td>${esc(r.name||"")}</td><td>${esc(s.name)}${s.zone?"（"+s.zone.replace("區","")+(s.sex||"")+"）":""}${isMulti(c)?"（"+dtxt(s,c)+"）":""}</td><td><a data-a="rmsign" data-sid="${s.id}" style="cursor:pointer;color:var(--bad)">✕</a></td></tr>`)}));
  return `<div class="card"><h2>標準職司</h2><p class="mut">新增課程、匯入課程時，會自動帶入這組職司：7 個負責人職司（姓名由後台指派）加下列組員／班員職司。</p>${MEMBERS.map(n=>`<label>${n} 人數上限</label><input class="std" data-n="${n}" type="number" min="0" value="${stdCap()[n]}">`).join("")}<p><button class="p" data-a="savestd">儲存人數</button> <button data-a="applystd">儲存並套用到尚無報名的課程</button></p><p class="mut">「套用」會把還沒有任何人報名的課程，職司重設為標準職司（包含你手動改過的）；已有人報名的課程不會動。</p></div>
  <div class="card"><h2>了愿分區</h2><p class="mut">每個了愿時段可指定最多兩個分區一起負責，只作為時段分工的標示。</p>${cs.some(c=>c.category=="了愿")?`<div style="overflow-x:auto"><table class="sum"><tr><th>日期</th><th>項目</th><th>分區一</th><th>分區二</th></tr>${cs.filter(c=>c.category=="了愿").map(c=>`<tr class="zrow" data-id="${c.id}"><td style="white-space:nowrap">${md(c.date)}${isMulti(c)?"～"+md(c.endDate):""}</td><td>${esc(c.title)}</td>${[0,1].map(i=>`<td><select class="zs">${zopts(c.zones,i)}</select></td>`).join("")}</tr>`).join("")}</table></div><p><button class="p" data-a="savezones">儲存分區</button></p>`:'<p class="mut">本年度沒有了愿項目。</p>'}</div>
  <div class="card"><h2>密碼設定</h2><p class="mut">留空表示不修改。變更後，其他裝置上的管理者需要重新輸入密碼。</p><label>一般管理者密碼</label><input id="pw1" type="password" autocomplete="new-password"><label>後台管理者密碼</label><input id="pw2" type="password" autocomplete="new-password"><p><button class="p" data-a="setpw">儲存密碼</button></p></div>
@@ -184,16 +191,17 @@ function admin(){const cs=yc(),rows=[];
  <div class="card"><h2>${year} 年度報名名單（${rows.length} 筆）</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th align="left">日期</th><th align="left">課程</th><th align="left">職司</th><th align="left">姓名</th><th></th></tr>${rows.join("")}</table></div></div>`}
 async function init(){if(connected){try{await startFirebase()}catch(e){alert("Firebase 連線失敗："+e.message);return}}else{load();pickYear()}
  let nm=null;try{nm=localStorage.getItem("acms_name")}catch(e){}
- if(nm){let lv=0;if(F)lv=F.lv;else try{lv=+localStorage.getItem("acms_lv")||0}catch(e){}me={name:nm,lv}}
+ let zn="",sx="";try{zn=localStorage.getItem("acms_zone")||"";sx=localStorage.getItem("acms_sex")||""}catch(e){}
+ if(nm&&zn&&sx){let lv=0;if(F)lv=F.lv;else try{lv=+localStorage.getItem("acms_lv")||0}catch(e){}me={name:nm,lv,zone:zn,sex:sx}}else if(nm)loginPref={name:nm,zone:zn,sex:sx}
  render()}
 function render(){
- if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名進入。姓名僅作簡易識別，並非身分驗證。</p>
- <label>姓名</label><input id="nm" maxlength="20" autofocus><label>管理密碼（一般班員不用填）</label><input id="pw" type="password" autocomplete="current-password">${connected?"":'<p class="mut">示範密碼：一般管理者 manager、後台管理者 admin</p>'}<p class="mut">登入後，這台裝置會記住你的姓名。</p>
+ if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名，並選擇區別與性別。姓名僅作簡易識別，並非身分驗證。</p>
+ <label>姓名</label><input id="nm" maxlength="20" value="${esc(loginPref.name||"")}" autofocus><div class="row" style="flex-wrap:nowrap"><div class="sp"><label>區別</label><select id="zn0"><option value="">請選擇</option>${ZONES.map(z=>`<option ${loginPref.zone==z?"selected":""}>${z}</option>`).join("")}</select></div><div class="sp"><label>性別</label><select id="sx0"><option value="">請選擇</option>${SEX.map(x=>`<option ${loginPref.sex==x?"selected":""}>${x}</option>`).join("")}</select></div></div><label>管理密碼（一般班員不用填）</label><input id="pw" type="password" autocomplete="current-password">${connected?"":'<p class="mut">示範密碼：一般管理者 manager、後台管理者 admin</p>'}<p class="mut">登入後，這台裝置會記住你的姓名、區別與性別。</p>
  <p><button class="p" data-a="login" style="width:100%">進入</button></p>
  <div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料只存在此瀏覽器。"}</div></div>`;return}
  const cs=yc().filter(c=>catOn[c.category]!==false).concat(catOn["個人"]!==false?peList():[]).sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||"")));
  $("#app").innerHTML=`<div class="banner">${connected?"已連接 Firebase":"尚未設定 Firebase：示範模式，資料僅存於本機瀏覽器，不會與其他人同步。"}</div>
- <header><h1>年度課程暨勤務管理系統</h1><div class="row"><div class="who"><b>${esc(me.name)}</b><span>${["班員／勤務","管理者","後台管理者"][me.lv]}</span></div><button data-a="logout">登出</button></div></header>
+ <header><h1>年度課程暨勤務管理系統</h1><div class="row"><div class="who"><b>${esc(me.name)}</b><span>${esc(me.zone||"")}${esc(me.sex||"")}・${["班員／勤務","管理者","後台管理者"][me.lv]}</span></div><button data-a="logout">登出</button></div></header>
  <div class="card"><div class="tbr"><label class="yl">年度</label><select id="yr" class="yrsel">${[...new Set([...db.years,year])].sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("")}</select><div class="tabs vt">${[["cal","行事曆"],["list","課程列表"],["mine","我的報名"]].map(([k,t])=>`<button data-a="view" data-v="${k}" class="${view==k?"on":""}">${t}</button>`).join("")}</div></div>
  ${me.lv>=1?`<div class="row tabs sm2" style="margin-top:8px">${me.lv==2?`<button data-a="view" data-v="admin" class="${view=="admin"?"on":""}">後台</button><button class="p" data-a="edit" data-id="">＋ 新增課程</button>`:""}<button data-a="export">匯出報名</button>${me.lv==2?`<button data-a="import">匯入課程</button><button data-a="newyear">新增年度</button>`:""}</div>`:""}</div>
  ${view=="cal"||view=="list"?filt():""}${view=="cal"?cal(cs):view=="list"?list(cs):view=="admin"&&me.lv==2?admin():mine()}`;if(view=="admin"&&me.lv==2)fillRoles()}
@@ -218,15 +226,21 @@ function detail(id){const c=db.courses.find(x=>x.id==id),mine=mySign(id),ok=c.st
  document.querySelectorAll(".mask").forEach(m=>m.remove());
  const lead=c.roles.filter(isLead).sort((a,b)=>LEADERS.indexOf(a.name)-LEADERS.indexOf(b.name)),mem=c.roles.filter(r=>!isLead(r)),
  sl=r=>db.signups.filter(s=>s.roleId==r.id),
- row=r=>{const l=sl(r).slice(),t=l.length,ld=isLead(r),ins=r.name=="講師",adm=me.lv==2&&ok;
+ row=r=>{const l=sl(r).slice(),t=l.length,ld=isLead(r),ins=r.name=="講師",adm=me.lv==2&&ok,bz=r.name=="班員";
   if(ins)l.sort((a,b)=>(a.ts||"99").localeCompare(b.ts||"99")||a.name.localeCompare(b.name));
   const rm=s=>me.lv==2?` <a data-a="rmsign" data-sid="${s.id}" style="cursor:pointer;color:var(--bad)">✕</a>`:"",
+  chip=s=>`<span>${esc(s.name)}${multi&&dtxt(s,c)!="全程"?"（"+dtxt(s,c)+"）":""}${rm(s)}${me.lv==2?` <a data-a="memedit" data-sid="${s.id}" style="cursor:pointer;color:var(--pri)">✎</a>`:""}</span>`,
   dk=k=>`data-dk="${r.id}:${k}" value="${esc(drafts[r.id+":"+k]||"")}"`,
+  sel=(k,ph,arr)=>`<select data-dk="${r.id}:${k}" style="flex:1;min-width:0"><option value="">${ph}</option>${arr.map(x=>`<option ${drafts[r.id+":"+k]==x?"selected":""}>${x}</option>`).join("")}</select>`,
   cnt=ld?(me.lv>=1?(t?"已指派":"待指派"):""):`${t}/${r.cap}${t>=r.cap?" 額滿":""}`,
-  form=ins?`<div style="margin-top:6px"><input ${dk("name")} placeholder="講師姓名" style="margin-bottom:4px"><input ${dk("topic")} placeholder="講題" style="margin-bottom:4px"><div class="row"><input type="time" ${dk("ts")} style="flex:1;min-width:90px"><span>～</span><input type="time" ${dk("te")} style="flex:1;min-width:90px"><button data-a="addsign" data-id="${c.id}" data-r="${r.id}">指派</button></div></div>`:`<div class="row" style="margin-top:4px"><input ${dk("name")} placeholder="${ld?"指派姓名":"新增人員"}" style="flex:1;min-width:90px"><button data-a="addsign" data-id="${c.id}" data-r="${r.id}">${ld?"指派":"新增"}</button></div>`;
+  form=ins?`<div style="margin-top:6px"><input ${dk("name")} placeholder="講師姓名" style="margin-bottom:4px"><input ${dk("topic")} placeholder="講題" style="margin-bottom:4px"><div class="row"><input type="time" ${dk("ts")} style="flex:1;min-width:90px"><span>～</span><input type="time" ${dk("te")} style="flex:1;min-width:90px"><button data-a="addsign" data-id="${c.id}" data-r="${r.id}">指派</button></div></div>`:ld?`<div class="row" style="margin-top:4px"><input ${dk("name")} placeholder="指派姓名" style="flex:1;min-width:90px"><button data-a="addsign" data-id="${c.id}" data-r="${r.id}">指派</button></div>`:`<div style="margin-top:6px"><input ${dk("name")} placeholder="新增人員姓名" style="margin-bottom:4px"><div class="row" style="flex-wrap:nowrap;margin-bottom:4px">${sel("zone","區別",ZONES)}${sel("sex","性別",SEX)}</div><button data-a="addsign" data-id="${c.id}" data-r="${r.id}">新增</button></div>`;
   if(ins){const n=Math.max(1,l.length)+(adm?1:0);
    return (l.length?l:[null]).map((s,i)=>`<tr>${i==0?`<td rowspan="${n}"><b>${esc(r.name)}</b></td>`:""}${s?`<td>${esc(s.name)}${rm(s)}${me.lv==2?` <a data-a="insedit" data-sid="${s.id}" style="cursor:pointer;color:var(--pri)">編輯</a>`:""}</td><td>${esc(s.topic||"")}${insTime(s)?` <span class="mut">${insTime(s)}</span>`:""}</td>`:`<td colspan="2"><span class="mut">—</span></td>`}${i==0?`<td class="cnt" rowspan="${n}">${cnt}</td>`:""}</tr>`).join("")+(adm?`<tr><td colspan="2">${form}</td></tr>`:"")}
-  return `<tr><td><b>${esc(r.name)}</b></td><td class="names" colspan="2">${l.map(s=>`<span>${esc(s.name)}${multi&&dtxt(s,c)!="全程"?"（"+dtxt(s,c)+"）":""}${rm(s)}</span>`).join("")||'<span class="mut">—</span>'}${adm?form:""}</td><td class="cnt">${cnt}</td></tr>`},
+  let body;
+  if(bz){const g=(z,x)=>l.filter(s=>s.zone==z&&s.sex==x),none=l.filter(s=>!ZONES.includes(s.zone)||!SEX.includes(s.sex)),dash='<span class="mut">—</span>';
+   body=`<table class="zt"><tr><th>區別</th><th>乾</th><th>坤</th></tr>${ZONES.map(z=>{const a=g(z,"乾"),b=g(z,"坤");return `<tr><td><b>${z}</b><div class="mut">${a.length+b.length}人</div></td><td>${a.map(chip).join("")||dash}</td><td>${b.map(chip).join("")||dash}</td></tr>`}).join("")}${none.length?`<tr><td><b>未填</b><div class="mut">${none.length}人</div></td><td colspan="2">${none.map(chip).join("")}</td></tr>`:""}</table>`}
+  else body=l.map(chip).join("")||'<span class="mut">—</span>';
+  return `<tr><td><b>${esc(r.name)}</b></td><td class="names" colspan="2">${body}${adm?form:""}</td><td class="cnt">${cnt}</td></tr>`},
  avail=mem.filter(r=>sl(r).length<r.cap),
  perday=multi?`<div class="mut" id="pd" style="margin-top:6px">每日報名人數：${dl.map(d=>md(d)+" "+db.signups.filter(s=>s.courseId==c.id&&sdays(s,c).includes(d)).length+" 人").join("　")}</div>`:"",
  panel=!ok?`<div class="mut">${c.status=="cancelled"?"課程已取消，無法報名。":"此課程不在目前年度。"}</div>`:mine?`<div>你已報名：<b>${esc((c.roles.find(r=>r.id==mine.roleId)||{}).name||"")}</b>${multi?"（"+dtxt(mine,c)+"）":""} <button class="d" data-a="unsign" data-id="${c.id}">取消報名</button></div>`:avail.length?`<div class="row"><select id="sr" style="flex:1">${avail.map(r=>`<option value="${r.id}">${esc(r.name)}（剩 ${r.cap-sl(r).length}）</option>`).join("")}</select><button class="p" data-a="sign" data-id="${c.id}">報名</button></div>`:'<div class="mut">目前沒有可報名的職司，或名額已滿。</div>',
@@ -243,23 +257,23 @@ function editor(id,only){const c=db.courses.find(x=>x.id==id)||{title:"",instruc
 const loadXlsx=()=>new Promise((res,rej)=>{if(window.XLSX)return res();const sc=document.createElement("script");sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";sc.onload=res;sc.onerror=()=>rej(new Error("載入失敗"));document.head.appendChild(sc)});
 async function exportXlsx(){
  try{await loadXlsx();const X=window.XLSX,cs=yc(),rd=c=>c.date+(isMulti(c)?"～"+c.endDate:""),tm=t=>{try{return new Date(t).toLocaleString("sv-SE").slice(0,16)}catch(e){return t||""}};
-  const a=[["年度","日期","分類","分區","課程","講師","地點","職司","姓名","參加日期","講題","時間","報名時間"]],b=[["日期","課程","分類","分區","職司","名額","已報名","姓名"]];
+  const a=[["年度","日期","分類","分區","課程","講師","地點","職司","姓名","區別","性別","參加日期","講題","時間","報名時間"]],b=[["日期","課程","分類","分區","職司","名額","已報名","姓名"]];
   cs.forEach(c=>c.roles.forEach(r=>{const l=db.signups.filter(s=>s.courseId==c.id&&s.roleId==r.id),z=(c.zones||[]).join("、");
    b.push([rd(c),c.title,c.category||"",z,r.name,isLead(r)?"":r.cap,l.length,l.map(s=>s.name+(s.topic?"（"+s.topic+"）":"")).join("、")]);
-   l.forEach(s=>a.push([c.year,rd(c),c.category||"",z,c.title,insName(c),c.location||"",r.name,s.name,isMulti(c)?dtxt(s,c):"",s.topic||"",insTime(s),tm(s.at)]))}));
+   l.forEach(s=>a.push([c.year,rd(c),c.category||"",z,c.title,insName(c),c.location||"",r.name,s.name,s.zone||"",s.sex||"",isMulti(c)?dtxt(s,c):"",s.topic||"",insTime(s),tm(s.at)]))}));
   const wb=X.utils.book_new(),w1=X.utils.aoa_to_sheet(a),w2=X.utils.aoa_to_sheet(b);
-  w1["!cols"]=[8,22,8,14,26,12,14,14,12,14,24,14,18].map(n=>({wch:n}));w2["!cols"]=[22,26,8,14,14,6,8,40].map(n=>({wch:n}));
+  w1["!cols"]=[8,22,8,14,26,12,14,14,12,8,6,14,24,14,18].map(n=>({wch:n}));w2["!cols"]=[22,26,8,14,14,6,8,40].map(n=>({wch:n}));
   X.utils.book_append_sheet(wb,w1,"報名名單");X.utils.book_append_sheet(wb,w2,"職司總表");
   X.writeFile(wb,`報名資料-${year}.xlsx`)}catch(e){alert("無法產生 Excel 檔（可能是網路問題），改用文字匯出。");exportCsv()}}
 function exportCsv(){const q=s=>`"${String(s??"").replace(/"/g,'""')}"`,rows=[["年度","日期","分類","分區","課程","講師","地點","職司","姓名","參加日期","報名時間"]];
  yc().forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>rows.push([c.year,c.date,c.category||"",(c.zones||[]).join("、"),c.title,insName(c),c.location,(c.roles.find(r=>r.id==s.roleId)||{}).name,s.name,isMulti(c)?dtxt(s,c):"",s.at])));
  const t=rows.map(r=>r.map(q).join(",")).join("\n");modal(`<h2>匯出 ${year} 年報名資料（CSV）</h2><textarea id="csv" style="width:100%;height:200px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px">${esc(t)}</textarea><div class="row" style="margin-top:8px"><button class="p" data-a="copy">複製</button><button data-a="close">關閉</button></div><p class="mut">貼到 Excel／Google 試算表即可。</p>`)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id;
- if(a=="login"){const n=$("#nm").value.trim(),pw=$("#pw").value;if(!n)return alert("請輸入姓名");
+ if(a=="login"){const n=$("#nm").value.trim(),pw=$("#pw").value,zn=$("#zn0").value,sx=$("#sx0").value;if(!n)return alert("請輸入姓名");if(!zn||!sx)return alert("請選擇區別與性別");
   (async()=>{let lv=F?F.lv:0;if(!F)try{lv=+localStorage.getItem("acms_lv")||0}catch(e){}
    if(pw){const nl=F?await claimLevel(pw):(pw==db.cfg.superKey?2:pw==db.cfg.managerKey?1:0);if(!nl)return alert(F?"密碼錯誤，或尚未在 Firebase 建立 config/secrets 文件":"密碼錯誤");lv=nl;if(F)F.lv=nl}
-   me={name:n,lv};try{localStorage.setItem("acms_name",n);if(!F)localStorage.setItem("acms_lv",lv)}catch(e){}render()})()}
- else if(a=="logout"){(async()=>{try{localStorage.removeItem("acms_name");localStorage.removeItem("acms_lv")}catch(e){}
+   me={name:n,lv,zone:zn,sex:sx};try{localStorage.setItem("acms_name",n);localStorage.setItem("acms_zone",zn);localStorage.setItem("acms_sex",sx);if(!F)localStorage.setItem("acms_lv",lv)}catch(e){}render();backfill()})()}
+ else if(a=="logout"){(async()=>{try{localStorage.removeItem("acms_name");localStorage.removeItem("acms_lv");localStorage.removeItem("acms_zone");localStorage.removeItem("acms_sex")}catch(e){}loginPref={};
   if(F){try{await F.S.deleteDoc(F.S.doc(F.fs,"claims",F.uid))}catch(e){}F.lv=0}me=null;if(view=="admin")view="cal";render()})()}else if(a=="view"){view=b.dataset.v;render()}
  else if(a=="mo"){let m=month+ +b.dataset.d,y=year;if(m<0){m=11;y--}else if(m>11){m=0;y++}if(y<2000||y>2099)return;month=m;year=y;selDay=null;yearAuto=false;render()}else if(a=="open"){if(id.startsWith("pe:"))peEdit(id.slice(3));else if(id.startsWith("m:"))mergeOpen(id);else detail(id)}
  else if(a=="close")b.closest(".mask").remove()
@@ -280,9 +294,11 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="export")exportXlsx()
  else if(a=="import")importUi()
  else if(a=="rmsign"){const g=db.signups.find(x=>x.id==b.dataset.sid),c=g&&db.courses.find(x=>x.id==g.courseId);if(g&&c&&confirm(`移除 ${g.name} 的報名？`))run(()=>api.unsign(c,g.name))}
- else if(a=="addsign"){const c=db.courses.find(x=>x.id==id),r=c.roles.find(x=>x.id==b.dataset.r),td=b.closest("td"),g=k=>((td.querySelector(`[data-dk="${r.id}:${k}"]`)||{}).value||"").trim(),n=g("name"),meta=r.name=="講師"?{topic:g("topic"),ts:g("ts"),te:g("te")}:undefined;
-  if(!n)return alert("請輸入姓名");if(meta&&meta.ts&&meta.te&&meta.te<meta.ts)return alert("結束時間不能早於開始時間");
+ else if(a=="addsign"){const c=db.courses.find(x=>x.id==id),r=c.roles.find(x=>x.id==b.dataset.r),td=b.closest("td"),g=k=>((td.querySelector(`[data-dk="${r.id}:${k}"]`)||{}).value||"").trim(),n=g("name"),meta=r.name=="講師"?{topic:g("topic"),ts:g("ts"),te:g("te")}:isLead(r)?undefined:{zone:g("zone"),sex:g("sex")};
+  if(!n)return alert("請輸入姓名");if(r.name=="班員"&&(!meta.zone||!meta.sex))return alert("請選擇區別與性別");if(meta&&meta.ts&&meta.te&&meta.te<meta.ts)return alert("結束時間不能早於開始時間");
   run(async()=>{await api.sign(c,r,[],n,meta);Object.keys(drafts).forEach(k=>{if(k.startsWith(r.id+":"))delete drafts[k]})})}
+ else if(a=="memedit"){const g=db.signups.find(x=>x.id==b.dataset.sid);if(g)memEdit(g)}
+ else if(a=="memsave"){const g=db.signups.find(x=>x.id==id);if(!g)return;const zn=$("#me_z").value,sx=$("#me_x").value;if(!zn||!sx)return alert("請選擇區別與性別");const cid=g.courseId;run(async()=>{await api.setMeta(g,{zone:zn,sex:sx});document.querySelectorAll(".mask").forEach(m=>m.remove());detail(cid)})}
  else if(a=="insedit"){const g=db.signups.find(x=>x.id==b.dataset.sid);if(g)insEdit(g)}
  else if(a=="inssave"){const g=db.signups.find(x=>x.id==id);if(!g)return;const t=$("#ie_t").value.trim(),ts=$("#ie_s").value,te=$("#ie_e").value;if(ts&&te&&te<ts)return alert("結束時間不能早於開始時間");const cid=g.courseId;run(async()=>{await api.setMeta(g,{topic:t,ts,te});document.querySelectorAll(".mask").forEach(m=>m.remove());detail(cid)})}
  else if(a=="adminadd"){const c=db.courses.find(x=>x.id==$("#bc").value),r=c&&c.roles.find(x=>x.id==$("#br").value),n=$("#bn").value.trim();if(!r||!n)return alert("請選擇課程、職司並輸入姓名");run(()=>api.sign(c,r,[],n))}
