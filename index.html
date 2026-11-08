@@ -81,8 +81,8 @@ const isMulti=c=>c.endDate&&c.endDate!=c.date,md=d=>+d.slice(5,7)+"/"+ +d.slice(
 dayList=c=>{const r=[];for(let t=Date.parse(c.date+"T00:00:00Z"),e=Date.parse((c.endDate||c.date)+"T00:00:00Z");t<=e;t+=864e5)r.push(new Date(t).toISOString().slice(0,10));return r},
 sdays=(s,c)=>s.days&&s.days.length?s.days:dayList(c),
 dtxt=(s,c)=>{const a=sdays(s,c);return a.length==dayList(c).length?"全程":a.map(md).join("、")};
-const LEADERS=["講師","負責點傳師","帶班","總務組組長","文書組組長","烹飪組組長","交通組組長","視聽組組長"],MEMBERS=["總務組組員","文書組組員","烹飪組組員","交通組組員","視聽組組員","班員"],
-isLead=r=>LEADERS.includes(r.name),mc=d=>{const m=(db.marks||{})[d];return m=="p"?"hp":m=="y"?"hy":""},
+const LEADERS=["負責點傳師","帶班","講師","總務組組長","文書組組長","烹飪組組長","交通組組長","視聽組組長"],MEMBERS=["總務組組員","文書組組員","烹飪組組員","交通組組員","視聽組組員","班員"],
+isLead=r=>LEADERS.includes(r.name),sortRoles=rs=>[...rs.filter(isLead).sort((a,b)=>LEADERS.indexOf(a.name)-LEADERS.indexOf(b.name)),...rs.filter(r=>!isLead(r))],mc=d=>{const m=(db.marks||{})[d];return m=="p"?"hp":m=="y"?"hy":""},
 stdCap=()=>Object.assign({"總務組組員":5,"文書組組員":5,"烹飪組組員":5,"交通組組員":5,"視聽組組員":5,"班員":300},db.std||{}),
 stdRoles=cat=>cat=="了愿"?[{id:uid(),name:"班員",cap:stdCap()["班員"]}]:[...LEADERS.map(n=>({id:uid(),name:n,cap:1})),...MEMBERS.map(n=>({id:uid(),name:n,cap:stdCap()[n]}))],
 roleRow=r=>`<div class="row rr" data-id="${r.id}"><select class="rn" style="flex:2">${[...MEMBERS,...(r.name&&!MEMBERS.includes(r.name)?[r.name]:[])].map(n=>`<option ${n==r.name?"selected":""}>${esc(n)}</option>`).join("")}</select><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`,
@@ -181,7 +181,7 @@ function peEdit(id){const e=peRaw().find(x=>x.id==id)||{title:"",date:selDay||`$
 function peBackup(){modal(`<h2>個人行程備份／還原</h2><p class="mut">備份：按「複製」，把內容貼到記事本或傳給自己存起來。還原：把備份內容貼進下方框內，按「還原」（會與現有行程合併，不會覆蓋）。</p><textarea id="pet" style="width:100%;height:180px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px">${esc(JSON.stringify(peRaw()))}</textarea><div class="row" style="margin-top:8px"><button data-a="pecopy">複製</button><button class="p" data-a="perestore">還原</button><span class="sp"></span><button data-a="close">關閉</button></div>`)}
 async function claimLevel(pw){const{fs,S}=F,ref=S.doc(fs,"claims",F.uid);
  for(const[lv,n]of[["super",2],["manager",1]]){try{await S.setDoc(ref,{level:lv,k:pw});return n}catch(e){}}return 0}
-function fillRoles(){const c=db.courses.find(x=>x.id==($("#bc")||{}).value),e=$("#br");if(e)e.innerHTML=c?c.roles.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join(""):""}
+function fillRoles(){const c=db.courses.find(x=>x.id==($("#bc")||{}).value),e=$("#br");if(e)e.innerHTML=c?sortRoles(c.roles).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join(""):""}
 function admin(){const cs=yc(),rows=[];
  cs.forEach(c=>db.signups.filter(s=>s.courseId==c.id).forEach(s=>{const r=c.roles.find(x=>x.id==s.roleId)||{};rows.push(`<tr><td>${md(c.date)}</td><td>${esc(c.title)}</td><td>${esc(r.name||"")}</td><td>${esc(s.name)}${s.zone?"（"+s.zone.replace("區","")+(s.sex||"")+"）":""}${isMulti(c)?"（"+dtxt(s,c)+"）":""}</td><td><a data-a="rmsign" data-sid="${s.id}" style="cursor:pointer;color:var(--bad)">✕</a></td></tr>`)}));
  return `<div class="card"><h2>標準職司</h2><p class="mut">新增課程、匯入課程時，會自動帶入這組職司：7 個負責人職司（姓名由後台指派）加下列組員／班員職司。</p>${MEMBERS.map(n=>`<label>${n} 人數上限</label><input class="std" data-n="${n}" type="number" min="0" value="${stdCap()[n]}">`).join("")}<p><button class="p" data-a="savestd">儲存人數</button> <button data-a="applystd">儲存並套用到尚無報名的課程</button></p><p class="mut">「套用」會把還沒有任何人報名的課程，職司重設為標準職司（包含你手動改過的）；已有人報名的課程不會動。</p></div>
@@ -258,7 +258,7 @@ const loadXlsx=()=>new Promise((res,rej)=>{if(window.XLSX)return res();const sc=
 async function exportXlsx(){
  try{await loadXlsx();const X=window.XLSX,cs=yc(),rd=c=>c.date+(isMulti(c)?"～"+c.endDate:""),tm=t=>{try{return new Date(t).toLocaleString("sv-SE").slice(0,16)}catch(e){return t||""}};
   const a=[["年度","日期","分類","分區","課程","講師","地點","職司","姓名","區別","性別","參加日期","講題","時間","報名時間"]],b=[["日期","課程","分類","分區","職司","名額","已報名","姓名"]];
-  cs.forEach(c=>c.roles.forEach(r=>{const l=db.signups.filter(s=>s.courseId==c.id&&s.roleId==r.id),z=(c.zones||[]).join("、");
+  cs.forEach(c=>sortRoles(c.roles).forEach(r=>{const l=db.signups.filter(s=>s.courseId==c.id&&s.roleId==r.id),z=(c.zones||[]).join("、");
    b.push([rd(c),c.title,c.category||"",z,r.name,isLead(r)?"":r.cap,l.length,l.map(s=>s.name+(s.topic?"（"+s.topic+"）":"")).join("、")]);
    l.forEach(s=>a.push([c.year,rd(c),c.category||"",z,c.title,insName(c),c.location||"",r.name,s.name,s.zone||"",s.sex||"",isMulti(c)?dtxt(s,c):"",s.topic||"",insTime(s),tm(s.at)]))}));
   const wb=X.utils.book_new(),w1=X.utils.aoa_to_sheet(a),w2=X.utils.aoa_to_sheet(b);
