@@ -141,12 +141,19 @@ function backfill(){if(!me||!me.zone||!me.sex)return;const l=db.signups.filter(s
 function refresh(){backfill();const m=document.querySelector("[data-det]"),i=m&&m.dataset.det,sr=$("#sr")&&$("#sr").value,dp=[...document.querySelectorAll("#dp input")].map(x=>[x.value,x.checked]);render();
  if(i&&db.courses.some(c=>c.id==i)){detail(i);if(sr&&$("#sr")&&[...$("#sr").options].some(o=>o.value==sr))$("#sr").value=sr;dp.forEach(([v,c])=>{const e=document.querySelector(`#dp input[value="${v}"]`);if(e)e.checked=c})}}
 const run=async f=>{try{await f()}catch(e){alert(/permission/i.test(e.message||"")?"權限不足：管理密碼可能已變更，請登出後重新輸入密碼。":e.message||e)}refresh()};
+const sigSub=new Map(),sigData=new Map();let sigKey="";
+function syncSignups(){if(!F||year==null)return;const ids=db.courses.filter(inYear).map(c=>c.id).sort(),k=year+"|"+ids.join(",");if(k==sigKey)return;sigKey=k;
+ const chunks=[];for(let i=0;i<ids.length;i+=30)chunks.push(ids.slice(i,i+30));const want=new Set(chunks.map(c=>c.join(",")));
+ for(const[n,u]of sigSub)if(!want.has(n)){u();sigSub.delete(n);sigData.delete(n)}
+ const{fs,S}=F;chunks.forEach(ch=>{const n=ch.join(",");if(sigSub.has(n))return;
+  sigSub.set(n,S.onSnapshot(S.query(S.collection(fs,"signups"),S.where("courseId","in",ch)),q=>{sigData.set(n,q.docs.map(d=>({...d.data(),id:d.id})));db.signups=[...sigData.values()].flat();if(me)refresh()},e=>alert("讀取失敗："+e.message)))});
+ if(!ids.length){db.signups=[];}else db.signups=[...sigData.values()].flat()}
 async function startFirebase(){
  const B="https://www.gstatic.com/firebasejs/10.12.2/",[A,S,Au]=await Promise.all(["app","firestore","auth"].map(n=>import(B+"firebase-"+n+".js")));
- const app=A.initializeApp(CONFIG),fs=S.getFirestore(app);const uc=await Au.signInAnonymously(Au.getAuth(app));
+ const app=A.initializeApp(CONFIG);let fs;try{fs=S.initializeFirestore(app,{localCache:S.persistentLocalCache({tabManager:S.persistentMultipleTabManager()})})}catch(e){fs=S.getFirestore(app)}const uc=await Au.signInAnonymously(Au.getAuth(app));
  F={fs,S,uid:uc.user.uid,lv:0};try{const sn=await S.getDoc(S.doc(fs,"claims",F.uid));if(sn.exists())F.lv={super:2,manager:1}[sn.data().level]||0}catch(e){}db={years:[],courses:[],signups:[]};
  const on=(n,f)=>S.onSnapshot(S.collection(fs,n),q=>{f(q.docs.map(d=>({...d.data(),id:d.id})));if(me)refresh()},e=>alert("讀取失敗："+e.message));
- on("courses",a=>{db.courses=a;pickYear()});on("signups",a=>db.signups=a);
+ on("courses",a=>{db.courses=a;pickYear();syncSignups()});
  on("years",a=>{db.years=a.map(x=>+x.id);db.marks={};a.forEach(x=>{Object.assign(db.marks,x.marks||{});if(x.std)db.std=x.std});const y=new Date().getFullYear();
   if(!db.years.length)S.setDoc(S.doc(fs,"years",String(y)),{year:y}).catch(()=>{});else{if(year==null)year=Math.max(...db.years);pickYear()}})}
 const api={
@@ -256,7 +263,7 @@ async function init(){if(connected){try{await startFirebase()}catch(e){alert("Fi
  let zn="",sx="";try{zn=localStorage.getItem("acms_zone")||"";sx=localStorage.getItem("acms_sex")||""}catch(e){}
  if(nm&&zn&&sx){let lv=0;if(F)lv=F.lv;else try{lv=+localStorage.getItem("acms_lv")||0}catch(e){}me={name:nm,lv,zone:zn,sex:sx}}else if(nm)loginPref={name:nm,zone:zn,sex:sx}
  render()}
-function render(){
+function render(){syncSignups();
  if(!me){$("#app").innerHTML=`<div class="card" style="max-width:380px;margin:12vh auto"><h1>年度課程暨勤務管理系統</h1><p class="mut">請輸入姓名，並選擇區別與性別。姓名僅作簡易識別，並非身分驗證。</p>
  <label>姓名</label><input id="nm" maxlength="20" value="${esc(loginPref.name||"")}" autofocus><div class="row" style="flex-wrap:nowrap"><div class="sp"><label>區別</label><select id="zn0"><option value="">請選擇</option>${ZONES.map(z=>`<option ${loginPref.zone==z?"selected":""}>${z}</option>`).join("")}</select></div><div class="sp"><label>性別</label><select id="sx0"><option value="">請選擇</option>${SEX.map(x=>`<option ${loginPref.sex==x?"selected":""}>${x}</option>`).join("")}</select></div></div><label>管理密碼（一般班員不用填）</label><input id="pw" type="password" autocomplete="current-password">${connected?"":'<p class="mut">示範密碼：一般管理者 manager、後台管理者 admin</p>'}<p class="mut">登入後，這台裝置會記住你的姓名、區別與性別。</p>
  <p><button class="p" data-a="login" style="width:100%">進入</button></p>
