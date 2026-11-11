@@ -77,10 +77,11 @@ const uid=()=>"i"+Math.random().toString(36).slice(2,10);
 let me=null,loginPref={},year=null,view="cal",month=new Date().getMonth(),yearAuto=true;
 function pickYear(){if(!yearAuto||!db||!db.years.length)return;const cy=new Date().getFullYear(),ys=db.years.slice().sort(),wc=ys.filter(y=>db.courses.some(c=>c.year==y)),pool=wc.length?wc:ys;year=pool.includes(cy)?cy:(pool.find(v=>v>cy)||pool[pool.length-1])}
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let showLunar=(()=>{try{return localStorage.getItem("acms_lunar")!="0"}catch(e){return true}})(),catOn=loadCats(),zoom=innerWidth<600?0:1,selDay=null;// ===== 農曆與節日（2000–2100，資料已與天文曆法程式庫逐日比對）=====
+let catOn=loadCats(),zoom=innerWidth<600?0:1,selDay=null;// ===== 農曆與節日（2000–2100，資料已與天文曆法程式庫逐日比對）=====
 const LD=[1723427, 5549335, 1354794, 2714655, 5597333, 1419303, 7165404, 3051568, 2958373, 6966617, 2774060, 1356833, 2798870, 2806824, 5679710, 1525809, 3576870, 7678363, 3483694, 3298339, 5552408, 1398826, 2806815, 5687445, 1787944, 3839388, 1872943, 1649700, 3300697, 3320875, 1402913, 2840790, 2991145, 6114014, 2967601, 2921510, 6892955, 2698285, 1223714, 1404247, 1487914, 2992159, 7162005, 3557416, 7640541, 3445807, 2708516, 5420377, 1234988, 1496096, 3582166, 3875881, 8014367, 3819569, 3446822, 2709915, 2710573, 1267746, 1791255, 1922090, 1909792, 3820756, 1723431, 5549532, 1354799, 2714659, 5597529, 1419308, 2987041, 6105366, 2959401, 6968862, 2774065, 1356837, 2799002, 2806829, 1484835, 3052823, 3576874, 3483680, 7492821, 3299367, 6633948, 1398831, 2806820, 5687641, 1787948, 3839009, 3746071, 1715240, 3300893, 1223728, 1403941, 2840986, 2992173, 1919011, 6067480, 2954282, 2763807, 5401748, 1223719],LQ="45554555445544554455445544554455445544554445444544454445444544454445444544444444444444444444444444445",LZ="12221222122212221222112211221122112211221122112211221122111211121112111211121112111211121111111111112",
 LDAY=["初一","初二","初三","初四","初五","初六","初七","初八","初九","初十","十一","十二","十三","十四","十五","十六","十七","十八","十九","二十","廿一","廿二","廿三","廿四","廿五","廿六","廿七","廿八","廿九","三十"],
 LMON=["正","二","三","四","五","六","七","八","九","十","十一","十二"],
+DF={"1-1":"彌勒祖師萬壽","2-2":"金公祖師成道","2-15":"太上老君聖誕","2-19":"南海古佛聖誕","2-23":"師母成道","4-8":"釋迦牟尼佛聖誕","4-24":"金公祖師聖誕","6-24":"關法律主聖誕","7-19":"師尊聖誕","7-30":"地藏古佛聖誕","8-2":"精勤金仙成道","8-3":"灶君聖誕","8-15":"師尊成道","8-28":"師母聖誕","9-7":"精勤金仙聖誕","10-27":"厚德大帝成道"},DS={"5-1":"厚德大帝成道","9-28":"孔子聖誕"},
 LF={"1-1":"春節","1-2":"春節","1-3":"春節","1-15":"元宵","5-5":"端午","7-7":"七夕","7-15":"中元","8-15":"中秋","9-9":"重陽"},
 SOL={"1-1":"元旦","2-28":"和平紀念日","4-4":"兒童節","5-1":"勞動節","8-8":"父親節","9-28":"教師節","10-10":"國慶日","10-25":"光復節","12-25":"行憲紀念日"},
 lunarOf=(y,m,d)=>{if(y<2000||y>2100)return null;const t=Date.UTC(y,m-1,d)/864e5;let yy=y,v=LD[yy-2000],cny=Date.UTC(yy,0,1)/864e5+(v&63);
@@ -91,14 +92,16 @@ diCache=new Map(),
 dayInfo=ds=>{if(diCache.has(ds))return diCache.get(ds);const[y,m,d]=ds.split("-").map(Number),L=lunarOf(y,m,d);let f="",r=null;
  if(y>=2000&&y<=2100){if(m==4&&d==+LQ[y-2000])f="清明";else if(m==12&&d==20+ +LZ[y-2000])f="冬至"}
  if(!f)f=SOL[m+"-"+d]||"";
+ const ds2=DS[m+"-"+d];if(ds2)f=f&&f!=ds2?ds2+"・"+f:ds2;
  if(!f&&m==5&&d>=8&&d<=14&&new Date(Date.UTC(y,4,d)).getUTCDay()==0)f="母親節";
  if(L){const nx=new Date(Date.UTC(y,m-1,d+1)),N=lunarOf(nx.getUTCFullYear(),nx.getUTCMonth()+1,nx.getUTCDate()),mn=(L.leap?"閏":"")+LMON[L.m-1]+"月";
   const lf=(!L.leap&&LF[L.m+"-"+L.d])||(N&&N.m==1&&N.d==1&&!N.leap?"除夕":"");if(lf)f=lf;
+  const df=!L.leap&&DF[L.m+"-"+L.d];if(df)f=f&&f!=df?df+"・"+f:df;
   r={full:mn+LDAY[L.d-1],lt:L.d==1?mn:LDAY[L.d-1],mo:L.d==1,f}}
  else if(f)r={full:"",lt:"",mo:false,f};
  diCache.set(ds,r);return r},
-lunHtml=ds=>{if(!showLunar)return"";const i=dayInfo(ds);if(!i)return"";return(i.lt?`<span class="lu${i.mo?" m":""}">${i.lt}</span>`:"")+(i.f?`<div class="fs">${i.f}</div>`:"")},
-lunTxt=ds=>{if(!showLunar)return"";const i=dayInfo(ds);if(!i)return"";const t=[i.full?"農曆"+i.full:"",i.f].filter(Boolean).join("・");return t?` <span class="mut" style="font-weight:400">${t}</span>`:""};
+lunHtml=ds=>{const i=dayInfo(ds);if(!i)return"";return(i.lt?`<span class="lu${i.mo?" m":""}">${i.lt}</span>`:"")+(i.f?`<div class="fs">${i.f}</div>`:"")},
+lunTxt=ds=>{const i=dayInfo(ds);if(!i)return"";const t=[i.full?"農曆"+i.full:"",i.f].filter(Boolean).join("・");return t?` <span class="mut" style="font-weight:400">${t}</span>`:""};
 const addDays=(d,n)=>new Date(Date.parse(d+"T00:00:00Z")+n*864e5).toISOString().slice(0,10);
 const insTime=s=>s.ts||s.te?(s.ts||"")+"–"+(s.te||""):"",insName=c=>c.instructor||db.signups.filter(s=>c.roles.some(r=>r.id==s.roleId&&r.name=="講師")).map(s=>s.name).join("、");
 const zs=c=>(c.zones||[]).map(z=>z.replace("區","")).join("／")||"未定",
@@ -118,7 +121,7 @@ stdCap=()=>Object.assign({"總務組組員":5,"文書組組員":5,"烹飪組組�
 stdRoles=cat=>cat=="了愿"?[{id:uid(),name:"班員",cap:stdCap()["班員"]}]:[...LEADERS.map(n=>({id:uid(),name:n,cap:n=="講師"?99:1})),...MEMBERS.map(n=>({id:uid(),name:n,cap:stdCap()[n]}))],
 roleRow=r=>`<div class="row rr" data-id="${r.id}"><select class="rn" style="flex:2">${[...MEMBERS,...(r.name&&!MEMBERS.includes(r.name)?[r.name]:[])].map(n=>`<option ${n==r.name?"selected":""}>${esc(n)}</option>`).join("")}</select><input class="rc" type="number" min="0" value="${r.cap}" style="flex:1"><button class="d" data-a="rmrole">✕</button></div>`,
 readRoles=()=>[...[...document.querySelectorAll("#leads input:checked")].map(i=>({id:i.dataset.id,name:i.value,cap:Math.max(i.value=="講師"?99:1,taken(i.dataset.id))})),...[...document.querySelectorAll(".rr")].map(r=>({id:r.dataset.id,name:r.querySelector(".rn").value.trim(),cap:Math.max(0,+r.querySelector(".rc").value||0)})).filter(r=>r.name)];const CATS=["總壇","分壇","禪修","了愿"],ZONES=["天真區","天善區","天美區","天志區","天孝區","天仁區"],SEX=["乾","坤"],zt=c=>c._m?"・"+c._ml:c.zones&&c.zones.length?"・"+c.zones.map(z=>z.replace("區","")).join("／"):"",zopts=(z,i)=>{const v=(z||[])[i];return `<option value="">（未選）</option>`+[...ZONES,...(v&&!ZONES.includes(v)?[v]:[])].map(n=>`<option ${v==n?"selected":""}>${esc(n)}</option>`).join("")},kc=c=>c.category=="個人"?5:CATS.indexOf(c.category)+1,tg=c=>kc(c)?`<span class="tag k${kc(c)}">${c.category}</span>`:"",
-filt=()=>`<div class="row" style="margin-bottom:10px">${[...CATS,"個人"].map((k,i)=>{const on=catOn[k]!==false;return `<button class="swt ${on?"on":""}" role="switch" aria-checked="${on}" data-a="cat" data-k="${k}" style="--c:var(--k${i+1})"><span class="trk"><i></i></span>${k}</button>`}).join("")}${[...CATS,"個人"].every(k=>catOn[k]===false)?'<span class="mut">類別都已關閉</span>':""}<button class="swt ${showLunar?"on":""}" role="switch" aria-checked="${showLunar}" data-a="lun" style="--c:#b8860b"><span class="trk"><i></i></span>農曆</button><span class="sp"></span><button class="sm" data-a="pe" data-id="">＋ 個人行程</button><button class="sm" data-a="pebk">備份／還原</button></div>`;
+filt=()=>`<div class="row" style="margin-bottom:10px">${[...CATS,"個人"].map((k,i)=>{const on=catOn[k]!==false;return `<button class="swt ${on?"on":""}" role="switch" aria-checked="${on}" data-a="cat" data-k="${k}" style="--c:var(--k${i+1})"><span class="trk"><i></i></span>${k}</button>`}).join("")}${[...CATS,"個人"].every(k=>catOn[k]===false)?'<span class="mut">類別都已關閉</span>':""}<span class="sp"></span><button class="sm" data-a="pe" data-id="">＋ 個人行程</button><button class="sm" data-a="pebk">備份／還原</button></div>`;
 const taken=rid=>db.signups.filter(s=>s.roleId==rid).length;
 const mySign=cid=>db.signups.find(s=>s.courseId==cid&&nk(s.name)==nk(me.name));
 const inYear=c=>c.year==year||(c.date<=year+"-12-31"&&(c.endDate||c.date)>=year+"-01-01"),yc=()=>db.courses.filter(inYear).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
@@ -376,7 +379,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  else if(a=="day"){selDay=b.dataset.d;render();const e=$("#daypanel");if(e)e.scrollIntoView({block:"nearest",behavior:"smooth"})}
  else if(a=="zset"){zoom=+b.dataset.z;render()}
  else if(a=="zm"){zoom=Math.max(0,Math.min(2,zoom+ +b.dataset.d));render()}
- else if(a=="lun"){showLunar=!showLunar;try{localStorage.setItem("acms_lunar",showLunar?"1":"0")}catch(e){}render()}
+
  else if(a=="cat"){catOn[b.dataset.k]=catOn[b.dataset.k]===false;saveCats();render()}
  else if(a=="doimport")run(doImport)
  else if(a=="copy"){const t=$("#csv");t.select();try{document.execCommand("copy")}catch(x){}}
